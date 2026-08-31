@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="출퇴근 노선">
+<title>출퇴근 노선 · 백엔드 암기</title>
+<style>
+:root{
+  --ink:#0E1116;--ink-2:#161B22;--ink-3:#1E252F;
+  --paper:#F2F4F7;--mute:#8B95A5;--r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--paper);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  font-size:16px;line-height:1.6;
+  min-height:100vh;min-height:100dvh;
+  padding:calc(30px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:640px;margin:0 auto}
+
+header{margin-bottom:28px}
+h1{font-size:29px;font-weight:800;letter-spacing:-.045em;margin:0 0 5px}
+header p{margin:0;font-size:13.5px;color:var(--mute);letter-spacing:-.01em}
+
+.lines{display:flex;flex-direction:column;gap:10px}
+a.line{
+  display:flex;align-items:center;gap:14px;
+  background:var(--ink-2);border:1.5px solid var(--ink-3);border-radius:var(--r);
+  padding:16px 17px;text-decoration:none;color:var(--paper);
+  transition:border-color .15s,transform .1s;
+}
+a.line:active{transform:scale(.99)}
+a.line:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.badge{
+  width:38px;height:38px;flex:none;border-radius:50%;
+  display:grid;place-items:center;color:#fff;
+  font-size:18px;font-weight:800;letter-spacing:-.03em;
+}
+.info{flex:1;min-width:0}
+.info b{display:block;font-size:16px;font-weight:700;letter-spacing:-.025em}
+.info small{display:block;font-size:12px;color:var(--mute);margin-top:1px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{margin-top:8px;height:4px;border-radius:2px;background:var(--ink-3);overflow:hidden}
+.prog i{display:block;height:100%;border-radius:2px;transition:width .5s}
+.meta{flex:none;text-align:right;font-size:11.5px;color:var(--mute);font-variant-numeric:tabular-nums;line-height:1.35}
+.meta b{display:block;font-size:13.5px;font-weight:700;color:var(--paper)}
+
+.tip{
+  margin-top:26px;background:var(--ink-2);border-radius:var(--r);
+  padding:15px 16px;font-size:13px;color:var(--mute);line-height:1.65;word-break:keep-all;
+}
+.tip b{color:var(--paper);font-weight:700}
+.tip+.tip{margin-top:9px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>출퇴근 노선</h1>
+    <p>하루 한 노선, 20문항씩</p>
+  </header>
+
+  <div class="lines" id="lines"></div>
+
+  <div class="tip" id="tip1"><b>홈 화면에 추가</b>해두면 앱처럼 바로 열 수 있어요. 사파리 하단 공유 버튼 → 홈 화면에 추가.</div>
+  <div class="tip">각 노선은 <b>한 바퀴를 다 돌 때까지 같은 문제가 다시 나오지 않아요.</b> 기록은 노선별로 따로 저장됩니다.</div>
+</div>
+
+<script>
+const LINES = [
+  { n: '1', file: 'quiz-1-http.html',        title: 'HTTP 상태 코드',  sub: '코드만 보고 원인 짚기',      color: '#0052A4', total: 100, key: 'quiz.http' },
+  { n: '6', file: 'quiz-6-http-status.html', title: 'HTTP 코드 사전',  sub: '숫자만 보고 뜻 떠올리기',    color: '#CD7C2F', total: 60,  key: 'quiz.status' },
+  { n: '2', file: 'quiz-2-spring.html',      title: 'Spring',          sub: 'DI · AOP · 트랜잭션 · JPA', color: '#00A84D', total: 100, key: 'quiz.spring' },
+  { n: '3', file: 'quiz-3-server.html',      title: '서버 · 인프라',    sub: '운영 중에 실제로 겪는 것들', color: '#EF7C1C', total: 100, key: 'quiz.server' },
+  { n: '4', file: 'quiz-4-network.html',     title: '네트워크',        sub: 'TCP부터 CORS까지',          color: '#00A5DE', total: 100, key: 'quiz.network' },
+  { n: '5', file: 'quiz-5-gisa.html',        title: '정보처리기사',     sub: '필기 핵심 개념 정리',        color: '#996CAC', total: 100, key: 'quiz.gisa' }
+];
+
+const canStore = (() => { try { const k='__t'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; } catch(e) { return false; } })();
+
+function read(key) {
+  try {
+    const d = JSON.parse(localStorage.getItem(key));
+    if (d && Array.isArray(d.seen) && typeof d.cycle === 'number') return d;
+  } catch (e) {}
+  return { seen: [], cycle: 1 };
+}
+
+document.getElementById('lines').innerHTML = LINES.map(L => {
+  const s = canStore ? read(L.key) : { seen: [], cycle: 1 };
+  const done = Math.min(s.seen.length, L.total);
+  const pct = Math.round(done / L.total * 100);
+  return '<a class="line" href="' + L.file + '">' +
+    '<div class="badge" style="background:' + L.color + '">' + L.n + '</div>' +
+    '<div class="info"><b>' + L.title + '</b><small>' + L.sub + '</small>' +
+    '<div class="prog"><i style="width:' + pct + '%;background:' + L.color + '"></i></div></div>' +
+    '<div class="meta"><b>' + done + '/' + L.total + '</b>' + s.cycle + '바퀴째</div>' +
+  '</a>';
+}).join('');
+
+if (!canStore) {
+  document.getElementById('tip1').innerHTML =
+    '<b>진행 기록이 저장되지 않는 환경이에요.</b> 파일을 직접 열면 이렇게 됩니다. 웹에 올려 주소로 접속하면 기록이 유지돼요.';
+}
+</script>
+</body>
+</html>
