@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0052A4">
+<title>HTTP 상태 코드 · 출퇴근 노선</title>
+<style>
+:root{
+  --line:#0052A4;
+  --ink:#0E1116;
+  --ink-2:#161B22;
+  --ink-3:#1E252F;
+  --paper:#F2F4F7;
+  --mute:#8B95A5;
+  --ok:#39C07C;
+  --no:#F2584D;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--paper);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  font-size:16px;line-height:1.6;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+code,.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+.rail{position:sticky;top:0;z-index:20;background:linear-gradient(var(--ink) 78%,rgba(14,17,22,0));padding:calc(14px + env(safe-area-inset-top)) 18px 16px}
+.rail-top{display:flex;align-items:center;gap:10px}
+.badge{width:30px;height:30px;flex:none;border-radius:50%;background:var(--line);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.subject{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.subject small{display:block;font-size:11px;font-weight:500;color:var(--mute);letter-spacing:.04em}
+.counter{margin-left:auto;text-align:right}
+.counter b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.counter span{font-size:11px;color:var(--mute);display:block;margin-top:-2px}
+
+.track{margin-top:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.stations{display:flex;align-items:center;gap:0;height:22px;padding-right:20px}
+.st{flex:none;display:flex;align-items:center}
+.st i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3);border:2px solid var(--ink-3);transition:background .2s,border-color .2s,transform .2s}
+.st b{width:14px;height:2px;background:var(--ink-3);flex:none}
+.st.pass i{background:var(--line);border-color:var(--line)}
+.st.pass b{background:var(--line)}
+.st.fail i{background:transparent;border-color:var(--no)}
+.st.fail b{background:var(--ink-3)}
+.st.now i{transform:scale(1.7);background:var(--paper);border-color:var(--paper)}
+
+main{flex:1;padding:6px 18px 20px;max-width:640px;width:100%;margin:0 auto}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--line);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);border-radius:999px;padding:3px 10px;margin-bottom:14px}
+.q{font-size:23px;line-height:1.45;font-weight:800;letter-spacing:-.035em;margin:0 0 22px;word-break:keep-all}
+.q code{font-size:.92em;font-weight:700;background:var(--ink-3);padding:2px 7px;border-radius:6px;letter-spacing:0}
+
+.choices{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:58px;padding:15px 16px;background:var(--ink-2);border:1.5px solid var(--ink-3);border-radius:var(--r);color:var(--paper);font:inherit;font-size:15.5px;line-height:1.45;text-align:left;letter-spacing:-.02em;word-break:keep-all;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.opt:active{transform:scale(.985)}
+.opt:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.opt kbd{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;background:var(--ink-3);color:var(--mute);display:grid;place-items:center;font:700 12px/1 ui-monospace,monospace}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--ink-2))}
+.opt.right kbd{background:var(--ok);color:#06110B}
+.opt.wrong{border-color:var(--no);background:color-mix(in srgb,var(--no) 13%,var(--ink-2))}
+.opt.wrong kbd{background:var(--no);color:#2A0906}
+.opt.dim{opacity:.4}
+.opt[disabled]{cursor:default}
+
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.ox .opt{justify-content:center;align-items:center;min-height:104px;font-size:38px;font-weight:800;padding:0}
+.ox .opt kbd{display:none}
+
+.verdict{margin-top:18px;border-radius:var(--r);padding:16px 17px;background:var(--ink-2);border-left:4px solid var(--mute)}
+.verdict.ok{border-left-color:var(--ok)}
+.verdict.no{border-left-color:var(--no)}
+.verdict h3{margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.verdict.ok h3{color:var(--ok)}
+.verdict.no h3{color:var(--no)}
+.verdict p{margin:0;font-size:14.5px;line-height:1.65;color:#C9D2DE;word-break:keep-all}
+.verdict code{background:var(--ink-3);padding:1px 6px;border-radius:5px;font-size:.92em}
+
+footer{position:sticky;bottom:0;padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(14,17,22,0),var(--ink) 30%);max-width:640px;width:100%;margin:0 auto}
+.next{width:100%;min-height:56px;border:0;border-radius:var(--r);background:var(--line);color:#fff;font:800 17px/1 inherit;letter-spacing:-.02em;cursor:pointer;transition:opacity .15s,transform .1s}
+.next:active{transform:scale(.99)}
+.next:disabled{opacity:.22;cursor:default}
+.next:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.hint{text-align:center;font-size:11.5px;color:var(--mute);margin-top:9px;letter-spacing:-.01em}
+
+.end{padding:10px 0 0}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.score b{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.score span{font-size:17px;color:var(--mute);font-weight:600}
+.end>p{color:var(--mute);font-size:14px;margin:0 0 22px}
+
+.cycle{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:26px}
+.cycle-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.cycle-top b{font-size:13.5px;font-weight:700;letter-spacing:-.02em}
+.cycle-top span{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--ink-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--line);border-radius:3px;transition:width .5s}
+.cycle small{display:block;margin-top:9px;font-size:11.5px;color:var(--mute);line-height:1.5}
+
+.end h2{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--mute);margin:0 0 12px}
+.miss{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;border-left:4px solid var(--no)}
+.miss h4{margin:0 0 7px;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.45;word-break:keep-all}
+.miss p{margin:0;font-size:13.5px;color:#B4BEC9;line-height:1.6;word-break:keep-all}
+.miss p b{color:var(--ok);font-weight:700}
+.actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.ghost{width:100%;min-height:52px;border-radius:var(--r);background:transparent;border:1.5px solid var(--ink-3);color:var(--paper);font:700 15.5px/1 inherit;cursor:pointer}
+.ghost:active{background:var(--ink-2)}
+.ghost:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.ghost.quiet{color:var(--mute);border-color:transparent;min-height:44px;font-size:13.5px;font-weight:600}
+
+/* 관리자 초기화 */
+.admin{
+  width:30px;height:30px;flex:none;margin-left:8px;
+  border:1.5px solid var(--ink-3);border-radius:9px;
+  background:transparent;color:var(--mute);
+  display:grid;place-items:center;cursor:pointer;padding:0;
+}
+.admin:active{background:var(--ink-2)}
+.admin:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.admin svg{width:15px;height:15px;display:block}
+
+.mask{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(6,8,11,.72);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:22px;
+}
+.mask[hidden]{display:none}
+.modal{
+  width:100%;max-width:340px;
+  background:var(--ink-2);border:1px solid var(--ink-3);border-radius:18px;
+  padding:22px 20px 18px;
+}
+.modal h3{margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em}
+.modal p{margin:0 0 16px;font-size:13.5px;color:var(--mute);line-height:1.55;word-break:keep-all}
+.pin{
+  width:100%;height:54px;margin-bottom:10px;
+  background:var(--ink);border:1.5px solid var(--ink-3);border-radius:var(--r);
+  color:var(--paper);font:800 24px/1 ui-monospace,monospace;
+  text-align:center;letter-spacing:.5em;text-indent:.5em;
+}
+.pin:focus{outline:none;border-color:var(--line)}
+.pin.shake{border-color:var(--no);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.warn{min-height:18px;margin:0 0 12px;font-size:12.5px;color:var(--no);text-align:center}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;min-height:48px;border-radius:var(--r);font:700 15px/1 inherit;cursor:pointer;border:0}
+.btn-no{background:transparent;border:1.5px solid var(--ink-3);color:var(--paper)}
+.btn-yes{background:var(--no);color:#fff;font-weight:800}
+.modal-btns button:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.q{font-size:26px}}
+</style>
+</head>
+<body>
+
+<header class="rail">
+  <div class="rail-top">
+    <div class="badge">1</div>
+    <div class="subject">HTTP 상태 코드<small>코드만 보고 원인 짚기</small></div>
+    <div class="counter"><b id="cnt">0/0</b><span id="streak">연속 0</span></div>
+    <button class="admin" id="admin" type="button" aria-label="진행 기록 초기화">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+  <div class="track"><div class="stations" id="stations"></div></div>
+</header>
+
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <h3 id="mt">진행 기록 초기화</h3>
+    <p>지금까지 푼 기록을 지우고 100문항 전체에서 다시 무작위로 출제합니다.</p>
+    <input class="pin" id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
+    <p class="warn" id="warn"></p>
+    <div class="modal-btns">
+      <button class="btn-no" id="cancel" type="button">취소</button>
+      <button class="btn-yes" id="confirm" type="button">초기화</button>
+    </div>
+  </div>
+</div>
+
+<main id="stage"></main>
+
+<footer id="foot">
+  <button class="next" id="next" disabled>답을 고르세요</button>
+  <div class="hint" id="hint">숫자키·O·X로 선택, Enter로 다음</div>
+</footer>
+
+<script>
+const BANK = [
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "<code>201</code>은 무엇을 뜻할까요?",
+"options": [
+"Created — 요청이 성공했고 새 리소스가 만들어짐",
+"OK — 요청이 그냥 성공함",
+"Accepted — 접수했지만 아직 처리 안 됨",
+"No Content — 성공했지만 돌려줄 본문이 없음"
+],
+"a": 0,
+"why": "<code>201 Created</code>는 POST로 리소스를 새로 만들었을 때 씁니다. 응답의 <code>Location</code> 헤더에 새로 만들어진 리소스의 주소를 담아주는 게 정석이에요."
+},
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "DELETE가 성공했는데 응답 본문에 보낼 내용이 없습니다. 뭘 쓸까요?",
+"options": [
+"204 No Content",
+"200 OK",
+"201 Created",
+"202 Accepted"
+],
+"a": 0,
+"why": "<code>204 No Content</code>는 성공했지만 본문이 없다는 뜻입니다. DELETE 성공이나 저장만 하고 끝나는 PUT에 자주 씁니다. 204에는 본문을 실으면 안 돼요."
+},
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "배치 작업을 큐에 넣기만 하고 아직 처리 전입니다. 알맞은 코드는?",
+"options": [
+"202 Accepted",
+"200 OK",
+"201 Created",
+"102 Processing"
+],
+"a": 0,
+"why": "<code>202 Accepted</code>는 요청을 접수는 했지만 처리가 끝나지 않았다는 뜻입니다. 비동기 작업이나 배치 등록에 씁니다."
+},
+{
+"tag": "2xx 성공",
+"type": "ox",
+"q": "<code>200 OK</code>는 응답 본문이 반드시 있어야 한다.",
+"a": false,
+"why": "본문이 없어도 200을 줄 수는 있습니다. 다만 본문이 없다는 걸 명확히 하려면 <code>204 No Content</code>가 더 정확한 표현이에요."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "choice",
+"q": "<code>301</code>과 <code>302</code>의 결정적인 차이는?",
+"options": [
+"301은 영구 이동이라 캐시되고, 302는 일시적이라 캐시되지 않음",
+"301은 GET만, 302는 모든 메서드에 쓸 수 있음",
+"301은 브라우저가 따라가고 302는 안 따라감",
+"차이 없이 둘 다 같은 동작"
+],
+"a": 0,
+"why": "<code>301 Moved Permanently</code>는 브라우저와 검색엔진이 새 주소를 기억(캐시)합니다. 잘못 걸면 되돌리기 어려워요. <code>302 Found</code>는 일시적이라 매번 원래 주소로 다시 물어봅니다."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "choice",
+"q": "POST 요청을 리다이렉트하는데 메서드를 그대로 POST로 유지하고 싶습니다.",
+"options": [
+"307 Temporary Redirect",
+"302 Found",
+"301 Moved Permanently",
+"303 See Other"
+],
+"a": 0,
+"why": "<code>307</code>과 <code>308</code>은 메서드와 본문을 절대 바꾸지 않습니다. 반면 301·302는 많은 클라이언트가 POST를 GET으로 바꿔버리는 관행이 있어요. 307은 일시적, 308은 영구입니다."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "choice",
+"q": "<code>304</code>는 어떤 상황에서 나올까요?",
+"options": [
+"캐시된 내용이 아직 유효해서 다시 안 보내도 될 때",
+"리소스가 다른 곳으로 옮겨졌을 때",
+"요청이 너무 많을 때",
+"서버가 응답을 만들지 못할 때"
+],
+"a": 0,
+"why": "<code>304 Not Modified</code>는 조건부 요청에 대한 응답입니다. 클라이언트가 <code>If-None-Match</code>나 <code>If-Modified-Since</code>로 물어봤을 때, 안 바뀌었으면 본문 없이 304만 돌려줘서 트래픽을 아낍니다."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "ox",
+"q": "<code>303 See Other</code>는 리다이렉트 후 무조건 GET으로 바뀐다.",
+"a": true,
+"why": "맞습니다. POST 처리 후 결과 페이지로 보낼 때 쓰는 PRG(Post-Redirect-Get) 패턴의 핵심이에요. 새로고침해도 재전송 경고가 안 뜹니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>401</code>과 <code>403</code>의 차이는?",
+"options": [
+"401은 누구인지 모름(인증 실패), 403은 누군지 알지만 권한 없음",
+"401은 권한 없음, 403은 인증 실패",
+"401은 로그인 만료, 403은 계정 정지 전용",
+"같은 뜻이고 관용적으로 나눠 씀"
+],
+"a": 0,
+"why": "<code>401 Unauthorized</code>는 이름과 달리 사실상 '인증 안 됨'입니다. 토큰이 없거나 만료된 상태죠. <code>403 Forbidden</code>은 인증은 됐는데 그 리소스에 접근할 자격이 없다는 뜻입니다. 401은 다시 로그인하면 풀리고, 403은 다시 로그인해도 안 풀려요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>400 Bad Request</code>는 언제 쓸까요?",
+"options": [
+"요청 자체가 문법적으로 잘못되어 서버가 이해할 수 없을 때",
+"리소스를 못 찾았을 때",
+"권한이 없을 때",
+"서버 내부에서 예외가 났을 때"
+],
+"a": 0,
+"why": "<code>400</code>은 요청 형식이 깨졌다는 뜻입니다. JSON 파싱 실패, 필수 파라미터 누락 등이 해당돼요. 형식은 맞는데 비즈니스 규칙에 걸린 경우는 <code>422</code>가 더 정확합니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "JSON 형식은 완벽한데 이메일 값이 규칙에 안 맞습니다. 가장 정확한 코드는?",
+"options": [
+"422 Unprocessable Content",
+"400 Bad Request",
+"409 Conflict",
+"406 Not Acceptable"
+],
+"a": 0,
+"why": "<code>422</code>는 문법은 맞지만 의미상 처리할 수 없다는 뜻입니다. 유효성 검증 실패에 딱 맞아요. 실무에서 400으로 뭉뚱그리는 경우도 많지만 422가 더 정확합니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "이미 존재하는 아이디로 회원가입을 시도했습니다.",
+"options": [
+"409 Conflict",
+"400 Bad Request",
+"403 Forbidden",
+"422 Unprocessable Content"
+],
+"a": 0,
+"why": "<code>409 Conflict</code>는 현재 리소스 상태와 요청이 충돌한다는 뜻입니다. 중복 가입, 동시 수정으로 인한 버전 충돌 등에 씁니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "URL은 맞는데 <code>DELETE</code>를 지원하지 않는 엔드포인트입니다.",
+"options": [
+"405 Method Not Allowed",
+"404 Not Found",
+"400 Bad Request",
+"501 Not Implemented"
+],
+"a": 0,
+"why": "<code>405</code>는 경로는 있지만 그 메서드는 허용되지 않는다는 뜻입니다. 응답에 <code>Allow</code> 헤더로 허용 메서드 목록을 함께 줘야 합니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "클라이언트가 <code>Accept: application/xml</code>을 보냈는데 서버는 JSON만 만들 수 있습니다.",
+"options": [
+"406 Not Acceptable",
+"415 Unsupported Media Type",
+"400 Bad Request",
+"409 Conflict"
+],
+"a": 0,
+"why": "<code>406</code>은 클라이언트가 <b>받고 싶어하는</b> 형식을 만들 수 없다는 뜻입니다. 반대로 클라이언트가 <b>보낸</b> 형식을 서버가 못 읽으면 <code>415</code>예요. Accept는 406, Content-Type은 415로 기억하세요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>415 Unsupported Media Type</code>이 뜨는 대표적인 상황은?",
+"options": [
+"Content-Type을 빼먹거나 서버가 못 읽는 형식으로 보냈을 때",
+"응답 형식이 안 맞을 때",
+"파일이 너무 클 때",
+"인증 토큰이 없을 때"
+],
+"a": 0,
+"why": "요청 본문의 <code>Content-Type</code>이 서버가 처리 못 하는 형식일 때 납니다. Spring에서 <code>@RequestBody</code>를 쓰면서 Content-Type을 안 붙이면 자주 만나는 에러예요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "API 호출 횟수 제한을 넘겼습니다.",
+"options": [
+"429 Too Many Requests",
+"503 Service Unavailable",
+"403 Forbidden",
+"408 Request Timeout"
+],
+"a": 0,
+"why": "<code>429</code>는 레이트 리밋 초과입니다. <code>Retry-After</code> 헤더로 언제 다시 시도하면 되는지 알려주는 게 좋습니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "업로드하려는 파일이 서버가 허용하는 크기를 넘었습니다.",
+"options": [
+"413 Content Too Large",
+"414 URI Too Long",
+"400 Bad Request",
+"507 Insufficient Storage"
+],
+"a": 0,
+"why": "<code>413</code>은 본문이 너무 크다는 뜻입니다. Nginx의 <code>client_max_body_size</code>에 걸리면 자주 보게 됩니다. URL이 너무 길면 <code>414</code>예요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "예전엔 있었지만 지금은 영구히 삭제된 리소스임을 명확히 알리고 싶습니다.",
+"options": [
+"410 Gone",
+"404 Not Found",
+"301 Moved Permanently",
+"204 No Content"
+],
+"a": 0,
+"why": "<code>410 Gone</code>은 '있었는데 이제 영영 없다'는 의미입니다. 404보다 강한 표현이라 검색엔진이 색인에서 더 빨리 지웁니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "ox",
+"q": "권한 없는 리소스의 존재 자체를 숨기고 싶을 때 <code>403</code> 대신 <code>404</code>를 주는 것은 정당한 선택이다.",
+"a": true,
+"why": "맞습니다. 403을 주면 '그 리소스가 존재한다'는 정보가 새어나갑니다. GitHub의 비공개 저장소가 대표적으로 404를 반환해요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>408 Request Timeout</code>은 누가 느린 상황일까요?",
+"options": [
+"클라이언트가 요청을 다 안 보내서 서버가 기다리다 끊음",
+"서버가 응답을 못 만들어서",
+"DB가 느려서",
+"게이트웨이 뒤 서버가 느려서"
+],
+"a": 0,
+"why": "<code>408</code>은 클라이언트 탓입니다. 서버가 요청을 다 받기 전에 대기 시간이 끝난 거예요. 서버나 백엔드가 느린 건 <code>504 Gateway Timeout</code>입니다."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "<code>500 Internal Server Error</code>는 무슨 뜻일까요?",
+"options": [
+"서버에서 예상 못 한 오류가 났고 더 구체적으로 설명할 수 없음",
+"요청이 잘못됨",
+"서버가 과부하 상태",
+"게이트웨이가 응답을 못 받음"
+],
+"a": 0,
+"why": "<code>500</code>은 서버 측 만능 에러입니다. NPE 같은 처리 안 된 예외가 튀어나오면 대부분 여기로 떨어져요. 로그를 봐야만 원인을 알 수 있습니다."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "Nginx 뒤의 WAS가 죽어 있어서 응답 자체를 못 받았습니다.",
+"options": [
+"502 Bad Gateway",
+"504 Gateway Timeout",
+"503 Service Unavailable",
+"500 Internal Server Error"
+],
+"a": 0,
+"why": "<code>502</code>는 게이트웨이가 상위 서버로부터 <b>잘못된 응답을 받았거나 아예 못 받은</b> 경우입니다. 톰캣이 안 떠 있을 때 Nginx가 502를 뱉는 게 전형적이에요."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "백엔드 서버가 살아는 있는데 응답이 너무 늦어 프록시가 기다리다 끊었습니다.",
+"options": [
+"504 Gateway Timeout",
+"502 Bad Gateway",
+"408 Request Timeout",
+"503 Service Unavailable"
+],
+"a": 0,
+"why": "<code>504</code>는 상위 서버가 제한 시간 안에 응답하지 않은 경우입니다. 502는 '연결 자체가 안 됨', 504는 '연결은 됐는데 너무 느림'으로 구분하세요."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "점검 중이라 잠시 서비스를 못 합니다. 곧 복구될 예정입니다.",
+"options": [
+"503 Service Unavailable",
+"500 Internal Server Error",
+"502 Bad Gateway",
+"404 Not Found"
+],
+"a": 0,
+"why": "<code>503</code>은 일시적 과부하나 점검을 뜻합니다. <code>Retry-After</code>를 함께 주면 클라이언트와 검색엔진이 나중에 다시 옵니다."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "<code>501 Not Implemented</code>는 언제 나올까요?",
+"options": [
+"서버가 그 요청 메서드 자체를 아예 구현하지 않았을 때",
+"경로가 그 메서드를 허용하지 않을 때",
+"서버가 과부하일 때",
+"인증이 안 됐을 때"
+],
+"a": 0,
+"why": "<code>501</code>은 서버가 그 기능 자체를 모른다는 뜻입니다. 특정 경로만 그 메서드를 막은 거라면 <code>405</code>가 맞아요."
+},
+{
+"tag": "5xx 서버",
+"type": "ox",
+"q": "5xx가 떴다면 클라이언트가 같은 요청을 그대로 다시 보내볼 여지가 있다.",
+"a": true,
+"why": "맞습니다. 5xx는 서버 문제라 재시도할 가치가 있어요. 반면 4xx는 요청을 고치지 않는 한 몇 번을 보내도 똑같습니다. 다만 재시도는 지수 백오프로 간격을 늘려가며 해야 합니다."
+},
+{
+"tag": "분류",
+"type": "choice",
+"q": "HTTP 상태 코드의 첫 자리 분류가 올바른 것은?",
+"options": [
+"1xx 정보 · 2xx 성공 · 3xx 리다이렉트 · 4xx 클라이언트 오류 · 5xx 서버 오류",
+"1xx 성공 · 2xx 정보 · 3xx 오류 · 4xx 서버 · 5xx 클라이언트",
+"1xx 요청 · 2xx 응답 · 3xx 캐시 · 4xx 인증 · 5xx 네트워크",
+"1xx 연결 · 2xx 성공 · 3xx 실패 · 4xx 재시도 · 5xx 종료"
+],
+"a": 0,
+"why": "첫 자리만 알아도 절반은 해결됩니다. 4로 시작하면 내 잘못, 5로 시작하면 서버 잘못이라고 외우세요."
+},
+{
+"tag": "1xx 정보",
+"type": "choice",
+"q": "WebSocket 연결이 성사될 때 서버가 주는 코드는?",
+"options": [
+"101 Switching Protocols",
+"100 Continue",
+"200 OK",
+"201 Created"
+],
+"a": 0,
+"why": "<code>101</code>은 프로토콜을 바꾸겠다는 응답입니다. HTTP로 시작한 연결을 WebSocket으로 전환할 때 나옵니다."
+},
+{
+"tag": "1xx 정보",
+"type": "choice",
+"q": "<code>100 Continue</code>는 어떤 역할일까요?",
+"options": [
+"큰 본문을 보내기 전에 서버가 받을 의사가 있는지 미리 확인",
+"연결을 유지하겠다는 신호",
+"응답이 곧 온다는 예고",
+"리다이렉트 전 확인"
+],
+"a": 0,
+"why": "클라이언트가 <code>Expect: 100-continue</code>를 보내 헤더만 먼저 확인받고, 괜찮으면 큰 본문을 보냅니다. 거절당할 업로드에 대역폭을 낭비하지 않으려는 장치예요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>404 Not Found</code>가 정확히 뜻하는 것은?",
+"options": [
+"서버가 요청한 리소스를 찾을 수 없음",
+"서버에 연결할 수 없음",
+"경로는 있지만 권한이 없음",
+"서버가 응답을 만들다 실패함"
+],
+"a": 0,
+"why": "<code>404</code>는 서버는 정상인데 그 경로에 해당하는 리소스가 없다는 뜻입니다. 서버 자체에 연결이 안 되는 건 HTTP 상태 코드가 아니라 연결 오류예요."
+},
+{
+"tag": "보안",
+"type": "choice",
+"q": "공용 와이파이에서 로그인 페이지로 강제 이동될 때 나오는 코드는?",
+"options": [
+"511 Network Authentication Required",
+"401 Unauthorized",
+"403 Forbidden",
+"407 Proxy Authentication Required"
+],
+"a": 0,
+"why": "<code>511</code>은 네트워크 접속 자체에 인증이 필요하다는 뜻입니다. 카페나 호텔 와이파이의 캡티브 포털이 대표적이에요."
+},
+{
+"tag": "보안",
+"type": "choice",
+"q": "프록시 서버가 인증을 요구합니다.",
+"options": [
+"407 Proxy Authentication Required",
+"401 Unauthorized",
+"511 Network Authentication Required",
+"403 Forbidden"
+],
+"a": 0,
+"why": "<code>407</code>은 401과 구조가 같지만 대상이 프록시입니다. <code>Proxy-Authenticate</code> 헤더가 함께 옵니다."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "<code>304</code>를 유도하기 위해 클라이언트가 보내는 헤더는?",
+"options": [
+"If-None-Match 또는 If-Modified-Since",
+"Cache-Control: no-store",
+"Accept-Encoding",
+"Authorization"
+],
+"a": 0,
+"why": "서버가 준 <code>ETag</code>를 <code>If-None-Match</code>에, <code>Last-Modified</code>를 <code>If-Modified-Since</code>에 실어 보냅니다. 안 바뀌었으면 서버가 304로 답하고 본문은 생략해요."
+},
+{
+"tag": "메서드",
+"type": "ox",
+"q": "<code>PUT</code>은 멱등하지만 <code>POST</code>는 멱등하지 않다.",
+"a": true,
+"why": "맞습니다. 멱등이란 같은 요청을 여러 번 보내도 결과가 같다는 뜻입니다. PUT은 같은 값으로 덮어쓰니 몇 번 해도 같지만, POST는 보낼 때마다 새로 만들어지죠. GET·PUT·DELETE는 멱등, POST·PATCH는 아닙니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "브라우저 콘솔에 CORS 오류가 떴습니다. 서버 응답 코드는 보통 어떨까요?",
+"options": [
+"서버는 200을 줬어도 브라우저가 막아서 오류로 보일 수 있음",
+"무조건 403",
+"무조건 401",
+"무조건 500"
+],
+"a": 0,
+"why": "CORS는 상태 코드 문제가 아니라 브라우저의 정책입니다. 서버가 <code>Access-Control-Allow-Origin</code>을 안 붙이면 응답이 200이어도 브라우저가 자바스크립트에 넘겨주지 않아요. 서버 로그엔 정상으로 찍히는 게 함정입니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "프리플라이트(preflight) 요청은 어떤 메서드로 갈까요?",
+"options": [
+"OPTIONS",
+"HEAD",
+"GET",
+"POST"
+],
+"a": 0,
+"why": "브라우저가 본 요청 전에 <code>OPTIONS</code>로 먼저 물어봅니다. 서버가 이 OPTIONS를 405로 막아두면 실제 요청은 시작도 못 해요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "<code>HEAD</code> 메서드의 응답은 어떤 특징이 있을까요?",
+"options": [
+"GET과 같은 헤더를 주지만 본문은 없음",
+"헤더도 본문도 없음",
+"본문만 있고 헤더는 없음",
+"항상 204를 반환"
+],
+"a": 0,
+"why": "<code>HEAD</code>는 본문 없이 헤더만 확인할 때 씁니다. 파일 크기나 수정 시각만 알고 싶을 때 다운로드 없이 확인할 수 있어요."
+},
+{
+"tag": "실무",
+"type": "ox",
+"q": "REST API에서 오류를 항상 <code>200</code>으로 주고 본문 안에 에러 코드를 넣는 것은 권장되는 설계다.",
+"a": false,
+"why": "권장되지 않습니다. 상태 코드는 HTTP의 공용 언어라 프록시·모니터링·클라이언트 라이브러리가 모두 이걸 보고 동작해요. 200으로 감싸면 이 모든 계층이 오류를 인식하지 못합니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "로그인 토큰이 만료되어 프론트가 자동으로 재발급을 시도해야 합니다. 서버가 줘야 할 코드는?",
+"options": [
+"401 Unauthorized",
+"403 Forbidden",
+"400 Bad Request",
+"419 Session Expired"
+],
+"a": 0,
+"why": "<code>401</code>이 표준입니다. 프론트엔드는 보통 401을 감지해 리프레시 토큰으로 재발급을 시도해요. 참고로 419는 표준 코드가 아닙니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "Nginx 설정 파일에 문법 오류가 있어 서버가 아예 안 떴습니다. 브라우저에는 무엇이 보일까요?",
+"options": [
+"HTTP 상태 코드가 아니라 연결 거부 오류",
+"502 Bad Gateway",
+"503 Service Unavailable",
+"500 Internal Server Error"
+],
+"a": 0,
+"why": "서버 프로세스 자체가 없으면 HTTP 응답을 만들 주체가 없습니다. 브라우저는 상태 코드가 아니라 <code>ERR_CONNECTION_REFUSED</code> 같은 연결 단계 오류를 보여줘요. 상태 코드가 보인다는 건 최소한 뭔가는 살아 있다는 뜻입니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "<code>Retry-After</code> 헤더를 붙이면 좋은 상태 코드끼리 묶인 것은?",
+"options": [
+"429와 503",
+"404와 410",
+"301과 302",
+"200과 201"
+],
+"a": 0,
+"why": "<code>429</code>(요청 과다)와 <code>503</code>(일시적 불가) 모두 '나중에 다시 오라'는 의미라 언제 오면 되는지 알려주는 게 예의입니다."
+},
+{
+"tag": "메서드",
+"type": "choice",
+"q": "<code>PUT</code>과 <code>PATCH</code>의 차이는?",
+"options": [
+"PUT은 리소스 전체를 교체, PATCH는 일부만 수정",
+"PUT은 생성 전용",
+"PATCH가 더 안전하다",
+"둘 다 동일하게 동작"
+],
+"a": 0,
+"why": "PUT은 보낸 내용으로 통째로 덮어씁니다. 빠뜨린 필드는 사라질 수 있어요. PATCH는 보낸 필드만 바꿉니다."
+},
+{
+"tag": "메서드",
+"type": "choice",
+"q": "안전한(safe) 메서드로만 묶인 것은?",
+"options": [
+"GET, HEAD, OPTIONS",
+"GET, POST",
+"PUT, DELETE",
+"POST, PATCH"
+],
+"a": 0,
+"why": "안전하다는 건 서버 상태를 바꾸지 않는다는 뜻입니다. 조회만 하죠. GET으로 데이터를 수정하게 설계하면 크롤러가 지나가며 데이터를 망칠 수 있습니다."
+},
+{
+"tag": "메서드",
+"type": "ox",
+"q": "<code>GET</code> 요청에도 본문(body)을 담을 수 있다.",
+"a": false,
+"why": "명세상 금지는 아니지만 의미가 정의되지 않아 많은 서버와 프록시가 무시하거나 거부합니다. 실무에서는 쓰지 않는 게 원칙이에요."
+},
+{
+"tag": "메서드",
+"type": "choice",
+"q": "<code>OPTIONS</code> 메서드의 용도는?",
+"options": [
+"해당 리소스가 지원하는 통신 옵션을 조회",
+"리소스를 삭제",
+"설정을 변경",
+"캐시를 비움"
+],
+"a": 0,
+"why": "CORS 프리플라이트에 쓰이는 그 메서드입니다. 응답의 <code>Allow</code> 헤더로 지원 메서드를 알려줍니다."
+},
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "동영상을 이어보기 할 때 서버가 일부 구간만 보내면 어떤 코드가 올까요?",
+"options": [
+"206 Partial Content",
+"200 OK",
+"204 No Content",
+"202 Accepted"
+],
+"a": 0,
+"why": "클라이언트가 <code>Range</code> 헤더로 구간을 요청하면 서버는 206으로 그 부분만 보냅니다. 이어받기와 스트리밍의 기반이에요."
+},
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "<code>205 Reset Content</code>가 의미하는 것은?",
+"options": [
+"처리는 됐으니 클라이언트가 입력 폼을 초기화하라는 뜻",
+"콘텐츠를 다시 보내라는 뜻",
+"캐시를 지우라는 뜻",
+"연결을 재설정하라는 뜻"
+],
+"a": 0,
+"why": "204와 비슷하게 본문이 없지만, 화면의 입력값을 비우라는 지시가 추가된 것입니다. 실무에서 자주 쓰이진 않아요."
+},
+{
+"tag": "2xx 성공",
+"type": "choice",
+"q": "프록시가 원본과 다른 내용으로 변형해 전달했다면?",
+"options": [
+"203 Non-Authoritative Information",
+"200 OK",
+"206 Partial Content",
+"304 Not Modified"
+],
+"a": 0,
+"why": "중간 프록시가 응답을 가공했음을 알리는 코드입니다. 원본 서버의 응답이 아니라는 뜻이에요."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "choice",
+"q": "<code>308 Permanent Redirect</code>가 301과 다른 점은?",
+"options": [
+"메서드와 본문을 절대 바꾸지 않음",
+"캐시되지 않음",
+"GET으로만 동작함",
+"일시적 이동임"
+],
+"a": 0,
+"why": "301은 POST를 GET으로 바꾸는 관행이 있지만, 308은 원래 메서드를 그대로 유지합니다. API에서 영구 이동을 알릴 땐 308이 안전해요."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "ox",
+"q": "리다이렉트 응답에는 <code>Location</code> 헤더가 반드시 있어야 한다.",
+"a": true,
+"why": "어디로 가야 할지 알려주는 헤더가 없으면 클라이언트는 이동할 수 없습니다. 3xx의 필수 요소예요."
+},
+{
+"tag": "3xx 리다이렉트",
+"type": "choice",
+"q": "리다이렉트가 무한 반복되면 브라우저는 어떻게 될까요?",
+"options": [
+"일정 횟수 후 중단하고 오류를 표시",
+"무한정 따라감",
+"자동으로 원래 페이지로 복귀",
+"서버가 차단"
+],
+"a": 0,
+"why": "보통 20회 안팎에서 <code>ERR_TOO_MANY_REDIRECTS</code>를 냅니다. HTTPS 강제 리다이렉트와 프록시 설정이 서로 물릴 때 자주 발생해요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "URL이 너무 길어서 처리할 수 없을 때는?",
+"options": [
+"414 URI Too Long",
+"413 Content Too Large",
+"400 Bad Request",
+"431 Request Header Fields Too Large"
+],
+"a": 0,
+"why": "GET에 파라미터를 과하게 붙이면 발생합니다. 데이터가 많으면 POST 본문으로 옮기는 게 맞아요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "쿠키나 토큰이 너무 커서 헤더 크기 제한에 걸리면?",
+"options": [
+"431 Request Header Fields Too Large",
+"413 Content Too Large",
+"414 URI Too Long",
+"400 Bad Request"
+],
+"a": 0,
+"why": "JWT에 정보를 과하게 담으면 만나게 됩니다. 토큰에는 최소한의 식별 정보만 넣어야 하는 이유예요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "법적 사유로 콘텐츠 접근이 차단된 경우의 코드는?",
+"options": [
+"451 Unavailable For Legal Reasons",
+"403 Forbidden",
+"410 Gone",
+"404 Not Found"
+],
+"a": 0,
+"why": "소설 '화씨 451'에서 따온 번호입니다. 검열이나 저작권 삭제 요청으로 차단된 경우에 씁니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "서버가 HTTPS 사용을 요구하며 프로토콜 전환을 요청하면?",
+"options": [
+"426 Upgrade Required",
+"301 Moved Permanently",
+"403 Forbidden",
+"505 HTTP Version Not Supported"
+],
+"a": 0,
+"why": "현재 프로토콜로는 처리할 수 없으니 업그레이드하라는 뜻입니다. <code>Upgrade</code> 헤더로 어떤 프로토콜인지 알려줍니다."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "동시 수정 충돌을 막기 위해 조건부 요청을 강제하고 싶을 때 쓰는 코드는?",
+"options": [
+"428 Precondition Required",
+"412 Precondition Failed",
+"409 Conflict",
+"417 Expectation Failed"
+],
+"a": 0,
+"why": "<code>428</code>은 '조건 없이는 못 받는다', <code>412</code>는 '조건을 붙였는데 안 맞는다'입니다. If-Match와 ETag를 조합한 낙관적 잠금에서 함께 등장해요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "<code>412 Precondition Failed</code>가 나는 상황은?",
+"options": [
+"If-Match로 보낸 ETag가 서버의 현재 값과 다를 때",
+"인증에 실패했을 때",
+"요청 형식이 틀렸을 때",
+"리소스가 없을 때"
+],
+"a": 0,
+"why": "내가 읽은 이후 누군가 먼저 수정했다는 뜻입니다. 덮어쓰기 사고를 막아주는 안전장치예요."
+},
+{
+"tag": "4xx 클라이언트",
+"type": "choice",
+"q": "결제가 필요함을 뜻하는 코드로 예약되어 있는 것은?",
+"options": [
+"402 Payment Required",
+"403 Forbidden",
+"401 Unauthorized",
+"429 Too Many Requests"
+],
+"a": 0,
+"why": "명세에는 있지만 표준화되지 않아 거의 쓰이지 않습니다. 일부 API가 요금제 초과 시 사용하기도 해요."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "디스크 공간이 부족해 저장에 실패했을 때의 코드는?",
+"options": [
+"507 Insufficient Storage",
+"500 Internal Server Error",
+"503 Service Unavailable",
+"413 Content Too Large"
+],
+"a": 0,
+"why": "WebDAV 확장 코드입니다. 파일 업로드 서비스에서 볼 수 있어요."
+},
+{
+"tag": "5xx 서버",
+"type": "choice",
+"q": "서버가 요청의 HTTP 버전을 지원하지 않으면?",
+"options": [
+"505 HTTP Version Not Supported",
+"501 Not Implemented",
+"400 Bad Request",
+"426 Upgrade Required"
+],
+"a": 0,
+"why": "오래된 클라이언트가 최신 서버에 붙거나 그 반대의 경우 발생합니다."
+},
+{
+"tag": "5xx 서버",
+"type": "ox",
+"q": "애플리케이션에서 잡히지 않은 예외는 대부분 500으로 응답된다.",
+"a": true,
+"why": "프레임워크가 마지막에 잡아 500으로 변환합니다. 그래서 500이 많다는 건 예외 처리가 부족하다는 신호예요. 예상 가능한 실패는 적절한 4xx로 내려주는 게 좋습니다."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "<code>Cache-Control: no-store</code>와 <code>no-cache</code>의 차이는?",
+"options": [
+"no-store는 아예 저장 금지, no-cache는 저장하되 매번 서버에 검증",
+"no-cache가 더 엄격하다",
+"둘 다 저장을 금지",
+"no-store는 캐시를 항상 사용"
+],
+"a": 0,
+"why": "이름이 헷갈리게 지어졌습니다. 민감 정보에는 <code>no-store</code>를 써야 해요. <code>no-cache</code>는 캐시를 두되 쓰기 전에 유효한지 물어보는 것입니다."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "<code>max-age=3600</code>이 의미하는 것은?",
+"options": [
+"3600초 동안은 서버에 묻지 않고 캐시를 사용",
+"3600초마다 갱신",
+"최대 3600개까지 캐시",
+"3600초 후 삭제"
+],
+"a": 0,
+"why": "이 시간 안에는 네트워크 요청 자체가 발생하지 않습니다. 정적 파일에 길게 걸고 파일명에 해시를 붙이는 게 표준 전략이에요."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "<code>ETag</code>의 역할은?",
+"options": [
+"리소스 내용의 지문 역할을 해 변경 여부를 판별",
+"캐시 만료 시간을 지정",
+"리소스 크기를 알림",
+"압축 방식을 알림"
+],
+"a": 0,
+"why": "내용이 바뀌면 값이 달라집니다. 클라이언트가 이걸 <code>If-None-Match</code>로 되돌려 보내면 서버가 304로 답할 수 있어요."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "CDN 등 공유 캐시에는 저장하지 말고 브라우저에만 두려면?",
+"options": [
+"Cache-Control: private",
+"Cache-Control: public",
+"Cache-Control: no-cache",
+"Cache-Control: max-age=0"
+],
+"a": 0,
+"why": "사용자별로 다른 개인화된 응답에 필수입니다. 이걸 빠뜨리면 CDN이 A의 응답을 B에게 줄 수 있어요."
+},
+{
+"tag": "캐시",
+"type": "choice",
+"q": "같은 URL이지만 <code>Accept-Language</code>에 따라 응답이 다를 때 캐시가 섞이지 않게 하려면?",
+"options": [
+"Vary: Accept-Language 헤더 추가",
+"Cache-Control: no-store",
+"ETag 제거",
+"URL에 파라미터 추가"
+],
+"a": 0,
+"why": "<code>Vary</code>는 어떤 요청 헤더에 따라 응답이 달라지는지 캐시에 알려줍니다. 이게 없으면 한국어 페이지가 영어 사용자에게 전달될 수 있어요."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "응답 본문의 형식을 알려주는 헤더는?",
+"options": [
+"Content-Type",
+"Accept",
+"Content-Length",
+"Content-Encoding"
+],
+"a": 0,
+"why": "<code>Content-Type</code>은 보내는 쪽이 '이건 무슨 형식이다'를 알리고, <code>Accept</code>는 받는 쪽이 '이런 형식을 원한다'를 알립니다."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "<code>Content-Encoding: gzip</code>이 뜻하는 것은?",
+"options": [
+"본문이 gzip으로 압축되어 전송됨",
+"본문이 gzip 파일임",
+"gzip을 지원한다는 뜻",
+"압축을 요청하는 것"
+],
+"a": 0,
+"why": "전송량을 크게 줄여줍니다. 클라이언트는 <code>Accept-Encoding</code>으로 지원 가능한 압축 방식을 미리 알려요."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "파일을 브라우저에서 열지 않고 다운로드시키려면?",
+"options": [
+"Content-Disposition: attachment",
+"Content-Type: application/octet-stream만 지정",
+"Cache-Control: no-store",
+"Content-Length 생략"
+],
+"a": 0,
+"why": "<code>attachment; filename=\"보고서.pdf\"</code>처럼 씁니다. <code>inline</code>으로 하면 브라우저에서 바로 열려요."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "<code>User-Agent</code> 헤더에 담기는 정보는?",
+"options": [
+"클라이언트의 브라우저와 운영체제 정보",
+"서버의 정보",
+"사용자의 계정 정보",
+"요청 경로"
+],
+"a": 0,
+"why": "통계나 기기별 분기에 쓰지만 위조가 쉬워서 보안 판단 근거로 삼으면 안 됩니다."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "프록시를 거친 요청에서 원래 클라이언트 IP를 확인하는 헤더는?",
+"options": [
+"X-Forwarded-For",
+"X-Real-Path",
+"Forwarded-Client",
+"X-Origin-IP"
+],
+"a": 0,
+"why": "프록시를 여러 번 거치면 IP가 콤마로 이어 붙습니다. 다만 위조가 가능하므로 신뢰할 수 있는 프록시가 붙인 값만 사용해야 해요."
+},
+{
+"tag": "헤더",
+"type": "choice",
+"q": "<code>Referer</code> 헤더가 담고 있는 것은?",
+"options": [
+"이 요청을 유발한 이전 페이지의 주소",
+"서버의 주소",
+"사용자 식별자",
+"요청 시각"
+],
+"a": 0,
+"why": "철자가 Referrer가 아니라 Referer인 건 초기 명세의 오타가 굳어진 것입니다. 개인정보 유출 우려로 <code>Referrer-Policy</code>로 제어합니다."
+},
+{
+"tag": "보안 헤더",
+"type": "choice",
+"q": "<code>Strict-Transport-Security</code>(HSTS)의 역할은?",
+"options": [
+"이후 접속을 항상 HTTPS로 강제",
+"인증서를 검증",
+"쿠키를 암호화",
+"XSS를 차단"
+],
+"a": 0,
+"why": "한 번 받으면 브라우저가 지정 기간 동안 HTTP 접속 시도를 자동으로 HTTPS로 바꿉니다. 첫 접속을 가로채는 공격을 막아줘요."
+},
+{
+"tag": "보안 헤더",
+"type": "choice",
+"q": "<code>X-Frame-Options: DENY</code>가 막는 공격은?",
+"options": [
+"클릭재킹",
+"SQL 인젝션",
+"CSRF",
+"중간자 공격"
+],
+"a": 0,
+"why": "내 사이트를 투명한 iframe으로 덮어 클릭을 가로채는 공격을 막습니다. 요즘은 CSP의 <code>frame-ancestors</code>로도 설정해요."
+},
+{
+"tag": "보안 헤더",
+"type": "choice",
+"q": "<code>Content-Security-Policy</code>의 주된 목적은?",
+"options": [
+"허용된 출처의 스크립트·스타일만 실행되게 제한",
+"응답을 압축",
+"캐시를 제어",
+"인증을 처리"
+],
+"a": 0,
+"why": "XSS 방어의 마지막 방어선입니다. 인라인 스크립트를 막고 허용 도메인을 화이트리스트로 관리해요."
+},
+{
+"tag": "보안 헤더",
+"type": "ox",
+"q": "<code>X-Content-Type-Options: nosniff</code>는 브라우저가 파일 형식을 임의로 추측하지 못하게 한다.",
+"a": true,
+"why": "맞습니다. 브라우저가 내용을 보고 형식을 추측하다가 업로드된 텍스트 파일을 스크립트로 실행해버리는 사고를 막습니다."
+},
+{
+"tag": "인증",
+"type": "choice",
+"q": "<code>Authorization: Bearer eyJhb...</code>에서 Bearer의 의미는?",
+"options": [
+"이 토큰을 소지한 사람에게 권한을 준다는 뜻",
+"암호화 방식 이름",
+"서버 이름",
+"토큰 만료 시각"
+],
+"a": 0,
+"why": "소지자 토큰이라 탈취되면 그대로 사용됩니다. 그래서 HTTPS가 필수고 만료 시간을 짧게 가져가야 해요."
+},
+{
+"tag": "인증",
+"type": "choice",
+"q": "401 응답에 함께 와야 하는 헤더는?",
+"options": [
+"WWW-Authenticate",
+"Authorization",
+"Allow",
+"Retry-After"
+],
+"a": 0,
+"why": "어떤 방식으로 인증하면 되는지 알려주는 헤더입니다. 명세상 401에는 필수예요."
+},
+{
+"tag": "REST",
+"type": "choice",
+"q": "REST API 설계에서 URL로 적절한 것은?",
+"options": [
+"/users/1/orders",
+"/getUserOrders?id=1",
+"/user/deleteOrder",
+"/api/doGetOrders"
+],
+"a": 0,
+"why": "URL에는 행위가 아니라 자원을 표현하고, 행위는 HTTP 메서드로 나타냅니다. 명사 복수형으로 계층을 표현하는 게 관례예요."
+},
+{
+"tag": "REST",
+"type": "choice",
+"q": "주문 취소 기능을 REST답게 설계하면?",
+"options": [
+"DELETE /orders/1 또는 PATCH /orders/1 로 상태 변경",
+"POST /cancelOrder",
+"GET /orders/1/cancel",
+"POST /orders/deleteById"
+],
+"a": 0,
+"why": "실제로 삭제하지 않고 상태만 바꾼다면 PATCH가 더 정확합니다. 취소 이력을 남겨야 하는 도메인이 대부분이라 DELETE보다 상태 변경이 흔해요."
+},
+{
+"tag": "REST",
+"type": "ox",
+"q": "조회 요청을 GET이 아닌 POST로 만들어야 할 때도 있다.",
+"a": true,
+"why": "검색 조건이 너무 복잡하거나 민감 정보가 포함돼 URL에 남기면 안 될 때는 POST를 씁니다. 로그와 브라우저 히스토리에 URL이 남는다는 점이 판단 근거예요."
+},
+{
+"tag": "REST",
+"type": "choice",
+"q": "페이지네이션 응답에 함께 주면 좋은 정보가 아닌 것은?",
+"options": [
+"서버의 내부 쿼리 실행 계획",
+"전체 개수",
+"현재 페이지 번호",
+"다음 페이지 존재 여부"
+],
+"a": 0,
+"why": "내부 구현 정보는 노출하면 안 됩니다. 클라이언트가 화면을 그리는 데 필요한 메타 정보만 주세요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "POST 요청이 네트워크 오류로 응답을 못 받았습니다. 그대로 재시도하면 위험한 이유는?",
+"options": [
+"서버에서는 이미 처리됐을 수 있어 중복 생성될 수 있음",
+"서버가 거부하기 때문",
+"4xx가 발생하기 때문",
+"캐시가 꼬이기 때문"
+],
+"a": 0,
+"why": "POST는 멱등하지 않습니다. 결제나 주문에서는 클라이언트가 만든 고유 키(Idempotency-Key)를 보내 서버가 중복을 걸러내게 설계합니다."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "에러 응답 본문에 담기에 적절한 것은?",
+"options": [
+"에러 코드, 사용자에게 보여줄 메시지, 어떤 필드가 문제인지",
+"스택 트레이스 전체",
+"DB 쿼리문",
+"서버 내부 경로"
+],
+"a": 0,
+"why": "프론트엔드가 분기할 수 있는 코드와 사용자에게 보여줄 문구를 나눠 주는 게 좋습니다. 내부 정보는 로그에만 남기세요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "헬스체크 엔드포인트가 반환해야 할 코드는?",
+"options": [
+"정상이면 200, 문제 있으면 503",
+"항상 200",
+"항상 204",
+"정상이면 204, 문제 있으면 500"
+],
+"a": 0,
+"why": "로드밸런서는 상태 코드로 판단합니다. DB 연결이 끊겼는데도 200을 주면 죽은 서버로 트래픽이 계속 들어가요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "API 응답이 느릴 때 클라이언트가 먼저 확인해야 할 것은?",
+"options": [
+"개발자 도구 네트워크 탭의 타이밍 분석(TTFB 등)",
+"서버 재시작",
+"캐시 삭제",
+"브라우저 변경"
+],
+"a": 0,
+"why": "첫 바이트까지의 시간(TTFB)이 길면 서버 처리가 느린 것이고, 다운로드가 길면 응답 크기나 대역폭 문제입니다. 원인을 나누는 게 먼저예요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "모든 API가 갑자기 401을 뱉기 시작했습니다. 가장 먼저 볼 것은?",
+"options": [
+"토큰 만료 또는 서버 시각(NTP) 불일치",
+"DB 상태",
+"디스크 용량",
+"방화벽 정책"
+],
+"a": 0,
+"why": "JWT는 만료 시각을 검증하므로 서버 시계가 어긋나면 유효한 토큰도 만료로 판정됩니다. 의외로 흔한 원인이에요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "브라우저에서는 되는데 서버 간 호출에서만 실패합니다. 확인할 것은?",
+"options": [
+"쿠키·세션이 아니라 명시적 인증 헤더가 필요한지",
+"CORS 설정",
+"브라우저 버전",
+"HTML 구조"
+],
+"a": 0,
+"why": "브라우저는 쿠키를 자동으로 붙이지만 서버 간 호출은 그렇지 않습니다. CORS도 브라우저만의 정책이라 서버 간 호출에는 적용되지 않아요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "응답 코드가 200인데 프론트에서 데이터가 안 보입니다. 의심할 것은?",
+"options": [
+"응답 형식이나 필드명이 클라이언트 기대와 다름",
+"서버가 죽었음",
+"포트가 막혔음",
+"DNS 오류"
+],
+"a": 0,
+"why": "200이면 통신은 성공한 것입니다. 실제 응답 본문을 직접 확인해 구조가 맞는지 보세요."
+},
+{
+"tag": "실무",
+"type": "choice",
+"q": "업로드가 특정 크기 이상에서만 실패합니다. 우선 확인할 곳은?",
+"options": [
+"Nginx의 client_max_body_size와 WAS의 업로드 제한",
+"DB 용량",
+"CPU 사용률",
+"DNS 설정"
+],
+"a": 0,
+"why": "프록시와 애플리케이션 양쪽에 제한이 따로 있습니다. 한쪽만 늘리면 여전히 413이 나요."
+},
+{
+"tag": "실무",
+"type": "ox",
+"q": "로그인 실패 시 '아이디가 없습니다'와 '비밀번호가 틀렸습니다'를 구분해 주는 것은 보안상 권장된다.",
+"a": false,
+"why": "권장되지 않습니다. 어떤 아이디가 존재하는지 알려주는 셈이라 계정 목록 수집에 악용됩니다. '아이디 또는 비밀번호가 올바르지 않습니다'로 통일하세요."
+},
+{
+"tag": "프로토콜",
+"type": "choice",
+"q": "HTTP 요청 메시지의 첫 줄(start line)에 들어가는 것은?",
+"options": [
+"메서드, 경로, HTTP 버전",
+"호스트, 포트, 경로",
+"상태 코드와 메시지",
+"Content-Type"
+],
+"a": 0,
+"why": "<code>GET /users HTTP/1.1</code> 형태입니다. 응답의 첫 줄은 버전, 상태 코드, 상태 메시지로 구성돼요."
+},
+{
+"tag": "프로토콜",
+"type": "choice",
+"q": "HTTP 메시지에서 헤더와 본문을 구분하는 것은?",
+"options": [
+"빈 줄 하나",
+"콜론",
+"세미콜론",
+"중괄호"
+],
+"a": 0,
+"why": "헤더 뒤에 빈 줄이 오고 그다음부터 본문입니다. 이 구조 때문에 헤더에 줄바꿈을 주입하는 공격이 존재해요."
+},
+{
+"tag": "프로토콜",
+"type": "choice",
+"q": "<code>Host</code> 헤더가 HTTP/1.1에서 필수가 된 이유는?",
+"options": [
+"하나의 IP에서 여러 도메인을 서비스하기 위해",
+"보안 강화를 위해",
+"캐시를 위해",
+"압축을 위해",
+"포트 지정을 위해"
+],
+"a": 0,
+"why": "가상 호스팅의 기반입니다. 서버는 이 헤더를 보고 어느 사이트의 요청인지 구분해요."
+},
+{
+"tag": "프로토콜",
+"type": "ox",
+"q": "HTTPS를 쓰면 요청 URL의 경로와 쿼리스트링도 암호화된다.",
+"a": true,
+"why": "경로와 쿼리는 암호화됩니다. 다만 어느 도메인에 접속했는지는 DNS 조회와 SNI를 통해 드러날 수 있어요. 그래도 URL에 비밀번호를 담으면 안 되는 건 서버 로그와 브라우저 히스토리에 남기 때문입니다."
+},
+{
+"tag": "프로토콜",
+"type": "choice",
+"q": "WebSocket이 HTTP와 다른 결정적인 점은?",
+"options": [
+"연결을 유지한 채 서버가 먼저 메시지를 보낼 수 있음",
+"암호화가 필수임",
+"더 적은 대역폭을 씀",
+"상태 코드를 쓰지 않음"
+],
+"a": 0,
+"why": "HTTP는 클라이언트가 물어봐야 답하는 구조입니다. WebSocket은 양방향이라 채팅이나 실시간 알림에 적합해요."
+},
+{
+"tag": "프로토콜",
+"type": "choice",
+"q": "SSE(Server-Sent Events)가 WebSocket과 다른 점은?",
+"options": [
+"서버에서 클라이언트로 가는 단방향이며 일반 HTTP 위에서 동작",
+"양방향이다",
+"암호화되지 않는다",
+"브라우저가 지원하지 않는다"
+],
+"a": 0,
+"why": "알림처럼 서버가 일방적으로 보내기만 하면 되는 경우 SSE가 더 간단합니다. 자동 재연결도 기본으로 제공돼요."
+},
+{
+"tag": "성능",
+"type": "choice",
+"q": "요청 수를 줄이는 방법으로 적절하지 않은 것은?",
+"options": [
+"모든 응답에 no-store를 지정",
+"이미지 스프라이트 사용",
+"파일 번들링",
+"캐시 적극 활용"
+],
+"a": 0,
+"why": "<code>no-store</code>는 캐시를 아예 막아 오히려 요청을 늘립니다. 민감 정보에만 제한적으로 써야 해요."
+},
+{
+"tag": "성능",
+"type": "choice",
+"q": "HTTP/2의 서버 푸시가 폐기 수순을 밟은 이유는?",
+"options": [
+"이미 캐시된 리소스까지 밀어보내 오히려 낭비가 컸음",
+"보안 문제가 있어서",
+"브라우저가 지원하지 않아서",
+"속도가 느려서"
+],
+"a": 0,
+"why": "클라이언트가 뭘 갖고 있는지 서버가 알 수 없다는 근본적 한계가 있었습니다. 지금은 <code>preload</code> 힌트 방식이 선호돼요."
+},
+{
+"tag": "성능",
+"type": "choice",
+"q": "압축을 적용해도 효과가 거의 없는 응답은?",
+"options": [
+"이미 압축된 JPEG·PNG 같은 이미지",
+"JSON",
+"HTML",
+"CSS"
+],
+"a": 0,
+"why": "텍스트는 압축률이 높지만 이미지·동영상은 이미 압축된 형식이라 오히려 CPU만 씁니다. 압축 대상 형식을 지정해두는 게 좋아요."
+}
+];
+const KEY = 'quiz.http';
+const SIZE = 20;
+
+/* 저장소 — 로컬스토리지가 막힌 환경에서는 메모리로 자동 대체 */
+const mem = {};
+const store = {
+  ok: (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; } })(),
+  read() {
+    try {
+      const raw = this.ok ? localStorage.getItem(KEY) : mem[KEY];
+      const d = raw ? JSON.parse(raw) : null;
+      if (d && Array.isArray(d.seen) && typeof d.cycle === 'number') return d;
+    } catch (e) {}
+    return { seen: [], cycle: 1 };
+  },
+  write(d) {
+    try {
+      const raw = JSON.stringify(d);
+      if (this.ok) localStorage.setItem(KEY, raw); else mem[KEY] = raw;
+    } catch (e) {}
+  },
+  clear() {
+    try { if (this.ok) localStorage.removeItem(KEY); else delete mem[KEY]; } catch (e) {}
+  }
+};
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), foot = $('foot'), nextBtn = $('next'), hint = $('hint');
+const toTop = () => { try { window.scrollTo(0, 0); } catch (e) {} };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let deck = [], idx = 0, score = 0, streak = 0, best = 0, misses = [], locked = false, cur = null;
+let state = store.read(), lastOfCycle = false, startedCycle = 1;
+
+/* 이번 세션에 낼 문제 뽑기 — 한 바퀴 안에서는 중복 없이 */
+function draw() {
+  state = store.read();
+  let seen = state.seen.filter(i => i >= 0 && i < BANK.length);
+  let remain = BANK.map((_, i) => i).filter(i => seen.indexOf(i) === -1);
+
+  if (remain.length === 0) {
+    state = { seen: [], cycle: state.cycle + 1 };
+    store.write(state);
+    seen = [];
+    remain = BANK.map((_, i) => i);
+  }
+  startedCycle = state.cycle;
+  const picked = shuffle(remain).slice(0, SIZE);
+  lastOfCycle = remain.length <= SIZE;
+  return picked;
+}
+
+function build(indices) {
+  deck = indices.map(i => {
+    const q = BANK[i];
+    if (q.type === 'ox') return { ...q, _i: i };
+    const order = shuffle(q.options.map((t, n) => [t, n]));
+    return { ...q, _i: i, options: order.map(o => o[0]), a: order.findIndex(o => o[1] === q.a) };
+  });
+  idx = 0; score = 0; streak = 0; best = 0; misses = [];
+  foot.style.display = '';
+  $('stations').innerHTML = deck.map(() => '<div class="st"><i></i><b></b></div>').join('');
+  render();
+}
+
+function paint() {
+  const sts = $('stations').children;
+  for (let i = 0; i < sts.length; i++) sts[i].classList.toggle('now', i === idx && !locked);
+  const now = sts[idx];
+  if (now && now.scrollIntoView) { try { now.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (e) {} }
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function render() {
+  locked = false;
+  cur = deck[idx];
+  const ox = cur.type === 'ox';
+  const labels = ox ? ['O', 'X'] : cur.options;
+
+  stage.innerHTML =
+    '<div class="tag">' + (cur.tag || 'HTTP 상태 코드') + '</div>' +
+    '<h2 class="q">' + cur.q + '</h2>' +
+    '<div class="choices ' + (ox ? 'ox' : '') + '" id="ch"></div>' +
+    '<div id="vd"></div>';
+
+  const ch = $('ch');
+  labels.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button';
+    b.innerHTML = ox ? t : '<kbd>' + (i + 1) + '</kbd><span>' + t + '</span>';
+    b.onclick = () => answer(i);
+    ch.appendChild(b);
+  });
+
+  nextBtn.disabled = true;
+  nextBtn.textContent = '답을 고르세요';
+  hint.textContent = ox ? 'O / X 키로 선택, Enter로 다음' : '1~' + labels.length + ' 숫자키로 선택, Enter로 다음';
+  paint();
+  toTop();
+}
+
+function answer(pick) {
+  if (locked) return;
+  locked = true;
+
+  const correct = cur.type === 'ox' ? (cur.a === true ? 0 : 1) : cur.a;
+  const hit = pick === correct;
+  const opts = $('ch').children;
+
+  for (let i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === correct) opts[i].classList.add('right');
+    else if (i === pick) opts[i].classList.add('wrong');
+    else opts[i].classList.add('dim');
+  }
+
+  const st = $('stations').children[idx];
+  st.classList.remove('now');
+  st.classList.add(hit ? 'pass' : 'fail');
+
+  if (hit) { score++; streak++; best = Math.max(best, streak); }
+  else {
+    streak = 0;
+    misses.push({ q: cur.q, right: cur.type === 'ox' ? (cur.a ? 'O' : 'X') : cur.options[correct], why: cur.why, i: cur._i });
+  }
+
+  /* 푼 즉시 기록 — 중간에 창을 닫아도 진행이 남도록 */
+  if (cur._i !== undefined) {
+    const s = store.read();
+    if (s.cycle === startedCycle && s.seen.indexOf(cur._i) === -1) {
+      s.seen.push(cur._i);
+      store.write(s);
+    }
+  }
+
+  $('vd').innerHTML =
+    '<div class="verdict ' + (hit ? 'ok' : 'no') + '">' +
+    '<h3>' + (hit ? '맞았어요' : '아쉬워요') + '</h3><p>' + cur.why + '</p></div>';
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = idx === deck.length - 1 ? '결과 보기' : '다음 문제';
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function advance() {
+  if (nextBtn.disabled) return;
+  if (idx === deck.length - 1) return finish();
+  idx++;
+  render();
+}
+
+function finish() {
+  foot.style.display = 'none';
+  const pct = Math.round(score / deck.length * 100);
+  const s = store.read();
+  const done = s.cycle === startedCycle ? s.seen.length : BANK.length;
+  const pctAll = Math.round(done / BANK.length * 100);
+
+  stage.innerHTML =
+    '<div class="end">' +
+    '<div class="score"><b>' + pct + '</b><span>점 · ' + score + '/' + deck.length + ' · 최고 연속 ' + best + '</span></div>' +
+    '<p>' + (pct === 100 ? '이번 구간은 만점이에요.' : pct >= 80 ? '거의 다 맞혔어요.' : pct >= 50 ? '절반은 잡았어요.' : '오답 노트부터 읽어보세요.') + '</p>' +
+
+    '<div class="cycle">' +
+    '<div class="cycle-top"><b>' + startedCycle + '바퀴째</b><span>' + done + ' / ' + BANK.length + '문항 · ' + pctAll + '%</span></div>' +
+    '<div class="bar"><i style="width:' + pctAll + '%"></i></div>' +
+    '<small>' + (lastOfCycle ? '이번 바퀴를 다 돌았어요. 다음 회차부터 ' + (startedCycle + 1) + '바퀴가 시작됩니다.' :
+      '다음 회차에는 아직 안 나온 ' + (BANK.length - done) + '문항 중에서 출제돼요.') +
+    (store.ok ? '' : ' (이 환경에서는 저장이 안 되니 파일을 내려받아 열면 진행이 유지됩니다)') + '</small></div>' +
+
+    (misses.length ? '<h2>오답 노트 ' + misses.length + '</h2>' +
+      misses.map(m => '<div class="miss"><h4>' + m.q + '</h4><p><b>' + m.right + '</b> — ' + m.why + '</p></div>').join('') : '') +
+
+    '<div class="actions">' +
+    (misses.length ? '<button class="next" id="again">틀린 ' + misses.length + '문제만 다시</button>' : '') +
+    '<button class="ghost" id="more">다음 ' + Math.min(SIZE, Math.max(BANK.length - done, SIZE)) + '문항 이어서</button>' +
+    '<button class="ghost quiet" id="reset">진행 기록 초기화</button>' +
+    '</div></div>';
+
+  if ($('again')) $('again').onclick = () => build(misses.map(m => m.i));
+  $('more').onclick = () => build(draw());
+  $('reset').onclick = openAdmin;
+  toTop();
+}
+
+nextBtn.onclick = advance;
+
+/* 관리자 초기화 — 비밀번호는 오조작 방지용이지 보안 장치가 아님 */
+const PIN = '1111';
+const mask = $('mask'), pin = $('pin'), warn = $('warn');
+let modalOpen = false;
+
+function openAdmin() {
+  modalOpen = true;
+  mask.hidden = false;
+  pin.value = '';
+  warn.textContent = '';
+  pin.classList.remove('shake');
+  setTimeout(() => pin.focus(), 30);
+}
+
+function closeAdmin() {
+  modalOpen = false;
+  mask.hidden = true;
+}
+
+function tryReset() {
+  if (pin.value !== PIN) {
+    warn.textContent = '비밀번호가 맞지 않습니다.';
+    pin.classList.remove('shake');
+    void pin.offsetWidth;
+    pin.classList.add('shake');
+    pin.value = '';
+    pin.focus();
+    return;
+  }
+  store.clear();
+  state = { seen: [], cycle: 1 };
+  closeAdmin();
+  build(draw());
+}
+
+$('admin').onclick = openAdmin;
+$('cancel').onclick = closeAdmin;
+$('confirm').onclick = tryReset;
+mask.onclick = e => { if (e.target === mask) closeAdmin(); };
+pin.onkeydown = e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); tryReset(); }
+  if (e.key === 'Escape') closeAdmin();
+};
+
+document.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeAdmin(); return; }
+  if (e.key === 'Enter' || e.key === ' ') { if (!nextBtn.disabled && foot.style.display !== 'none') { e.preventDefault(); advance(); } return; }
+  if (locked || !$('ch')) return;
+  const ch = $('ch').children;
+  if (cur.type === 'ox') {
+    if (e.key === 'o' || e.key === 'O' || e.key === 'ㅐ') answer(0);
+    if (e.key === 'x' || e.key === 'X' || e.key === 'ㅌ') answer(1);
+  } else {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= ch.length) answer(n - 1);
+  }
+});
+
+build(draw());
+</script>
+</body>
+</html>

@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#CD7C2F">
+<title>HTTP 코드 사전 · 출퇴근 노선</title>
+<style>
+:root{
+  --line:#CD7C2F;
+  --ink:#0E1116;
+  --ink-2:#161B22;
+  --ink-3:#1E252F;
+  --paper:#F2F4F7;
+  --mute:#8B95A5;
+  --ok:#39C07C;
+  --no:#F2584D;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--paper);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  font-size:16px;line-height:1.6;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+code,.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+.rail{position:sticky;top:0;z-index:20;background:linear-gradient(var(--ink) 78%,rgba(14,17,22,0));padding:calc(14px + env(safe-area-inset-top)) 18px 16px}
+.rail-top{display:flex;align-items:center;gap:10px}
+.badge{width:30px;height:30px;flex:none;border-radius:50%;background:var(--line);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.subject{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.subject small{display:block;font-size:11px;font-weight:500;color:var(--mute);letter-spacing:.04em}
+.counter{margin-left:auto;text-align:right}
+.counter b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.counter span{font-size:11px;color:var(--mute);display:block;margin-top:-2px}
+
+.track{margin-top:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.stations{display:flex;align-items:center;gap:0;height:22px;padding-right:20px}
+.st{flex:none;display:flex;align-items:center}
+.st i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3);border:2px solid var(--ink-3);transition:background .2s,border-color .2s,transform .2s}
+.st b{width:14px;height:2px;background:var(--ink-3);flex:none}
+.st.pass i{background:var(--line);border-color:var(--line)}
+.st.pass b{background:var(--line)}
+.st.fail i{background:transparent;border-color:var(--no)}
+.st.fail b{background:var(--ink-3)}
+.st.now i{transform:scale(1.7);background:var(--paper);border-color:var(--paper)}
+
+main{flex:1;padding:6px 18px 20px;max-width:640px;width:100%;margin:0 auto}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--line);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);border-radius:999px;padding:3px 10px;margin-bottom:14px}
+.q{font-size:23px;line-height:1.45;font-weight:800;letter-spacing:-.035em;margin:0 0 22px;word-break:keep-all}
+.q code{font-size:.92em;font-weight:700;background:var(--ink-3);padding:2px 7px;border-radius:6px;letter-spacing:0}
+
+.choices{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:58px;padding:15px 16px;background:var(--ink-2);border:1.5px solid var(--ink-3);border-radius:var(--r);color:var(--paper);font:inherit;font-size:15.5px;line-height:1.45;text-align:left;letter-spacing:-.02em;word-break:keep-all;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.opt:active{transform:scale(.985)}
+.opt:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.opt kbd{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;background:var(--ink-3);color:var(--mute);display:grid;place-items:center;font:700 12px/1 ui-monospace,monospace}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--ink-2))}
+.opt.right kbd{background:var(--ok);color:#06110B}
+.opt.wrong{border-color:var(--no);background:color-mix(in srgb,var(--no) 13%,var(--ink-2))}
+.opt.wrong kbd{background:var(--no);color:#2A0906}
+.opt.dim{opacity:.4}
+.opt[disabled]{cursor:default}
+
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.ox .opt{justify-content:center;align-items:center;min-height:104px;font-size:38px;font-weight:800;padding:0}
+.ox .opt kbd{display:none}
+
+.verdict{margin-top:18px;border-radius:var(--r);padding:16px 17px;background:var(--ink-2);border-left:4px solid var(--mute)}
+.verdict.ok{border-left-color:var(--ok)}
+.verdict.no{border-left-color:var(--no)}
+.verdict h3{margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.verdict.ok h3{color:var(--ok)}
+.verdict.no h3{color:var(--no)}
+.verdict p{margin:0;font-size:14.5px;line-height:1.65;color:#C9D2DE;word-break:keep-all}
+.verdict code{background:var(--ink-3);padding:1px 6px;border-radius:5px;font-size:.92em}
+
+footer{position:sticky;bottom:0;padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(14,17,22,0),var(--ink) 30%);max-width:640px;width:100%;margin:0 auto}
+.next{width:100%;min-height:56px;border:0;border-radius:var(--r);background:var(--line);color:#fff;font:800 17px/1 inherit;letter-spacing:-.02em;cursor:pointer;transition:opacity .15s,transform .1s}
+.next:active{transform:scale(.99)}
+.next:disabled{opacity:.22;cursor:default}
+.next:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.hint{text-align:center;font-size:11.5px;color:var(--mute);margin-top:9px;letter-spacing:-.01em}
+
+.end{padding:10px 0 0}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.score b{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.score span{font-size:17px;color:var(--mute);font-weight:600}
+.end>p{color:var(--mute);font-size:14px;margin:0 0 22px}
+
+.cycle{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:26px}
+.cycle-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.cycle-top b{font-size:13.5px;font-weight:700;letter-spacing:-.02em}
+.cycle-top span{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--ink-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--line);border-radius:3px;transition:width .5s}
+.cycle small{display:block;margin-top:9px;font-size:11.5px;color:var(--mute);line-height:1.5}
+
+.end h2{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--mute);margin:0 0 12px}
+.miss{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;border-left:4px solid var(--no)}
+.miss h4{margin:0 0 7px;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.45;word-break:keep-all}
+.miss p{margin:0;font-size:13.5px;color:#B4BEC9;line-height:1.6;word-break:keep-all}
+.miss p b{color:var(--ok);font-weight:700}
+.actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.ghost{width:100%;min-height:52px;border-radius:var(--r);background:transparent;border:1.5px solid var(--ink-3);color:var(--paper);font:700 15.5px/1 inherit;cursor:pointer}
+.ghost:active{background:var(--ink-2)}
+.ghost:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.ghost.quiet{color:var(--mute);border-color:transparent;min-height:44px;font-size:13.5px;font-weight:600}
+
+/* 관리자 초기화 */
+.admin{
+  width:30px;height:30px;flex:none;margin-left:8px;
+  border:1.5px solid var(--ink-3);border-radius:9px;
+  background:transparent;color:var(--mute);
+  display:grid;place-items:center;cursor:pointer;padding:0;
+}
+.admin:active{background:var(--ink-2)}
+.admin:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.admin svg{width:15px;height:15px;display:block}
+
+.mask{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(6,8,11,.72);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:22px;
+}
+.mask[hidden]{display:none}
+.modal{
+  width:100%;max-width:340px;
+  background:var(--ink-2);border:1px solid var(--ink-3);border-radius:18px;
+  padding:22px 20px 18px;
+}
+.modal h3{margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em}
+.modal p{margin:0 0 16px;font-size:13.5px;color:var(--mute);line-height:1.55;word-break:keep-all}
+.pin{
+  width:100%;height:54px;margin-bottom:10px;
+  background:var(--ink);border:1.5px solid var(--ink-3);border-radius:var(--r);
+  color:var(--paper);font:800 24px/1 ui-monospace,monospace;
+  text-align:center;letter-spacing:.5em;text-indent:.5em;
+}
+.pin:focus{outline:none;border-color:var(--line)}
+.pin.shake{border-color:var(--no);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.warn{min-height:18px;margin:0 0 12px;font-size:12.5px;color:var(--no);text-align:center}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;min-height:48px;border-radius:var(--r);font:700 15px/1 inherit;cursor:pointer;border:0}
+.btn-no{background:transparent;border:1.5px solid var(--ink-3);color:var(--paper)}
+.btn-yes{background:var(--no);color:#fff;font-weight:800}
+.modal-btns button:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.q{font-size:26px}}
+</style>
+</head>
+<body>
+
+<header class="rail">
+  <div class="rail-top">
+    <div class="badge">6</div>
+    <div class="subject">HTTP 코드 사전<small>숫자만 보고 뜻 떠올리기</small></div>
+    <div class="counter"><b id="cnt">0/0</b><span id="streak">연속 0</span></div>
+    <button class="admin" id="admin" type="button" aria-label="진행 기록 초기화">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+  <div class="track"><div class="stations" id="stations"></div></div>
+</header>
+
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <h3 id="mt">진행 기록 초기화</h3>
+    <p>지금까지 푼 기록을 지우고 100문항 전체에서 다시 무작위로 출제합니다.</p>
+    <input class="pin" id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
+    <p class="warn" id="warn"></p>
+    <div class="modal-btns">
+      <button class="btn-no" id="cancel" type="button">취소</button>
+      <button class="btn-yes" id="confirm" type="button">초기화</button>
+    </div>
+  </div>
+</div>
+
+<main id="stage"></main>
+
+<footer id="foot">
+  <button class="next" id="next" disabled>답을 고르세요</button>
+  <div class="hint" id="hint">숫자키·O·X로 선택, Enter로 다음</div>
+</footer>
+
+<script>
+const BANK = [
+{
+"tag": "1xx",
+"type": "choice",
+"q": "<code>100</code> Continue",
+"options": [
+"헤더는 잘 받았으니 본문을 계속 보내도 된다",
+"요청을 접수했지만 아직 처리 전이다",
+"연결을 계속 유지하겠다",
+"응답이 곧 도착한다"
+],
+"a": 0,
+"why": "큰 파일을 보내기 전 서버가 받을 의사가 있는지 미리 확인할 때 나옵니다. 클라이언트가 <code>Expect: 100-continue</code>를 보내면 서버가 이걸로 답해요."
+},
+{
+"tag": "1xx",
+"type": "choice",
+"q": "<code>101</code> Switching Protocols",
+"options": [
+"요청대로 프로토콜을 전환하겠다",
+"프로토콜이 잘못됐다",
+"프로토콜을 지원하지 않는다",
+"프로토콜 업그레이드가 필요하다"
+],
+"a": 0,
+"why": "WebSocket 연결이 성사될 때 나오는 코드입니다. HTTP로 시작한 연결을 WebSocket으로 바꾸는 거예요."
+},
+{
+"tag": "1xx",
+"type": "choice",
+"q": "<code>102</code> Processing",
+"options": [
+"처리 중이니 시간이 더 걸린다",
+"처리에 실패했다",
+"처리를 거부했다",
+"처리가 끝났다"
+],
+"a": 0,
+"why": "WebDAV 확장 코드입니다. 오래 걸리는 작업에서 클라이언트가 연결을 끊지 않도록 알려줍니다."
+},
+{
+"tag": "1xx",
+"type": "choice",
+"q": "<code>103</code> Early Hints",
+"options": [
+"본 응답 전에 미리 불러올 리소스를 알려준다",
+"응답이 이르다",
+"힌트를 요청한다",
+"캐시를 확인하라"
+],
+"a": 0,
+"why": "서버가 본문을 준비하는 동안 브라우저가 CSS나 폰트를 미리 받게 해서 체감 속도를 높입니다."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>200</code> OK",
+"options": [
+"요청이 정상적으로 처리됐다",
+"리소스가 새로 생성됐다",
+"처리했지만 본문이 없다",
+"요청을 접수만 했다"
+],
+"a": 0,
+"why": "가장 흔한 성공 응답입니다. GET·POST·PUT 등 대부분의 성공에 쓰여요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>201</code> Created",
+"options": [
+"요청이 성공했고 새 리소스가 만들어졌다",
+"요청이 성공했다",
+"처리를 접수했다",
+"본문이 없다"
+],
+"a": 0,
+"why": "POST로 리소스를 새로 만들었을 때 씁니다. <code>Location</code> 헤더에 새 리소스 주소를 담아주는 게 정석이에요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>202</code> Accepted",
+"options": [
+"요청은 접수했지만 처리는 아직 끝나지 않았다",
+"요청이 완료됐다",
+"리소스를 만들었다",
+"권한을 승인했다"
+],
+"a": 0,
+"why": "비동기 작업이나 배치 등록에 씁니다. 나중에 상태를 조회할 주소를 함께 주면 좋아요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>203</code> Non-Authoritative Information",
+"options": [
+"중간 프록시가 원본 응답을 변형해 전달했다",
+"권한이 없다",
+"인증이 필요하다",
+"신뢰할 수 없는 서버다"
+],
+"a": 0,
+"why": "원본 서버의 응답 그대로가 아니라는 뜻입니다. 실무에서 보기는 드물어요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>204</code> No Content",
+"options": [
+"성공했지만 돌려줄 본문이 없다",
+"리소스를 찾을 수 없다",
+"내용이 변경되지 않았다",
+"요청 본문이 비었다"
+],
+"a": 0,
+"why": "DELETE 성공이나 저장만 하고 끝나는 PUT에 씁니다. 204에는 본문을 실으면 안 돼요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>205</code> Reset Content",
+"options": [
+"처리했으니 입력 폼을 초기화하라",
+"내용을 다시 보내라",
+"캐시를 비워라",
+"연결을 재설정하라"
+],
+"a": 0,
+"why": "204와 비슷하지만 화면의 입력값을 비우라는 지시가 추가된 것입니다."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>206</code> Partial Content",
+"options": [
+"요청한 범위의 일부만 보낸다",
+"일부만 처리했다",
+"내용이 잘렸다",
+"응답이 불완전하다"
+],
+"a": 0,
+"why": "동영상 이어보기나 파일 이어받기의 기반입니다. 클라이언트가 <code>Range</code> 헤더로 구간을 지정해요."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>207</code> Multi-Status",
+"options": [
+"여러 리소스에 대한 각각의 상태를 한 번에 반환",
+"여러 서버가 응답했다",
+"상태가 여러 개로 충돌한다",
+"여러 번 시도했다"
+],
+"a": 0,
+"why": "WebDAV 확장 코드입니다. 본문에 XML로 각 항목의 결과를 담습니다."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>208</code> Already Reported",
+"options": [
+"앞서 이미 보고한 항목이라 반복하지 않는다",
+"이미 신고된 오류다",
+"중복 요청이다",
+"이미 처리됐다"
+],
+"a": 0,
+"why": "207 응답 안에서 같은 항목이 반복될 때 생략하는 용도입니다."
+},
+{
+"tag": "2xx",
+"type": "choice",
+"q": "<code>226</code> IM Used",
+"options": [
+"요청에 대해 인스턴스 조작 결과를 적용해 반환했다",
+"이미지가 사용됐다",
+"메시지를 사용했다",
+"캐시를 사용했다"
+],
+"a": 0,
+"why": "델타 인코딩 관련 코드로 실무에서 거의 볼 일이 없습니다."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>300</code> Multiple Choices",
+"options": [
+"여러 응답 후보가 있어 클라이언트가 골라야 한다",
+"여러 번 리다이렉트됐다",
+"선택이 잘못됐다",
+"여러 서버가 있다"
+],
+"a": 0,
+"why": "표준화된 선택 방식이 없어 실제로는 거의 쓰이지 않습니다."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>301</code> Moved Permanently",
+"options": [
+"리소스가 영구히 다른 주소로 옮겨졌다",
+"일시적으로 다른 주소에 있다",
+"리소스가 삭제됐다",
+"주소가 잘못됐다"
+],
+"a": 0,
+"why": "브라우저와 검색엔진이 새 주소를 캐시합니다. 잘못 걸면 되돌리기 어려우니 신중해야 해요."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>302</code> Found",
+"options": [
+"리소스가 일시적으로 다른 주소에 있다",
+"영구히 이동했다",
+"찾을 수 없다",
+"이미 존재한다"
+],
+"a": 0,
+"why": "일시적이라 캐시되지 않고 매번 원래 주소로 다시 물어봅니다. 이름이 Found라 헷갈리기 쉬워요."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>303</code> See Other",
+"options": [
+"다른 주소를 GET으로 조회하라",
+"다른 서버를 보라",
+"다른 방법을 쓰라",
+"다른 형식으로 요청하라"
+],
+"a": 0,
+"why": "POST 처리 후 결과 페이지로 보낼 때 씁니다. 새로고침해도 재전송 경고가 안 뜨는 PRG 패턴의 핵심이에요."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>304</code> Not Modified",
+"options": [
+"캐시된 내용이 그대로 유효하니 다시 안 보낸다",
+"수정 권한이 없다",
+"수정에 실패했다",
+"내용이 없다"
+],
+"a": 0,
+"why": "조건부 요청에 대한 응답입니다. 본문 없이 헤더만 보내 트래픽을 아껴요."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>305</code> Use Proxy",
+"options": [
+"지정된 프록시를 통해 접근해야 한다",
+"프록시를 쓸 수 없다",
+"프록시 인증이 필요하다",
+"프록시가 응답했다"
+],
+"a": 0,
+"why": "보안 문제로 폐기되어 지금은 쓰이지 않습니다."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>307</code> Temporary Redirect",
+"options": [
+"일시적으로 이동했으며 메서드를 바꾸지 말라",
+"일시적으로 이동했고 GET으로 바꿔라",
+"영구히 이동했다",
+"임시로 사용할 수 없다"
+],
+"a": 0,
+"why": "302와 달리 POST를 POST 그대로 유지합니다. API 리다이렉트에 안전해요."
+},
+{
+"tag": "3xx",
+"type": "choice",
+"q": "<code>308</code> Permanent Redirect",
+"options": [
+"영구히 이동했으며 메서드를 바꾸지 말라",
+"영구히 이동했고 GET으로 바꿔라",
+"일시적으로 이동했다",
+"영구히 삭제됐다"
+],
+"a": 0,
+"why": "301의 메서드 보존 버전입니다. 307이 302의 짝인 것과 같은 관계예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>400</code> Bad Request",
+"options": [
+"요청 자체가 잘못되어 서버가 이해할 수 없다",
+"권한이 없다",
+"리소스가 없다",
+"서버 오류다"
+],
+"a": 0,
+"why": "JSON 파싱 실패나 필수 파라미터 누락이 대표적입니다. 4xx 중 가장 포괄적인 코드예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>401</code> Unauthorized",
+"options": [
+"인증이 되지 않았다 (누구인지 모른다)",
+"권한이 없다 (누군지는 안다)",
+"요청이 잘못됐다",
+"계정이 정지됐다"
+],
+"a": 0,
+"why": "이름과 달리 실제 의미는 '인증 안 됨'입니다. 토큰이 없거나 만료된 상태예요. 로그인하면 풀립니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>402</code> Payment Required",
+"options": [
+"결제가 필요하다 (예약된 코드)",
+"결제에 실패했다",
+"금액이 잘못됐다",
+"결제 정보가 없다"
+],
+"a": 0,
+"why": "명세에 예약만 되어 있고 표준화되지 않았습니다. 일부 API가 요금제 초과에 쓰기도 해요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>403</code> Forbidden",
+"options": [
+"인증은 됐지만 접근 권한이 없다",
+"인증이 되지 않았다",
+"리소스가 없다",
+"요청이 잘못됐다"
+],
+"a": 0,
+"why": "401과 달리 다시 로그인해도 풀리지 않습니다. 존재 자체를 숨기고 싶으면 404를 주기도 해요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>404</code> Not Found",
+"options": [
+"요청한 리소스를 찾을 수 없다",
+"서버에 연결할 수 없다",
+"권한이 없다",
+"리소스가 삭제됐다"
+],
+"a": 0,
+"why": "서버는 정상인데 그 경로에 해당하는 게 없다는 뜻입니다. 서버 자체에 연결이 안 되는 건 상태 코드가 아니라 연결 오류예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>405</code> Method Not Allowed",
+"options": [
+"경로는 있지만 그 메서드는 허용되지 않는다",
+"메서드를 구현하지 않았다",
+"요청이 잘못됐다",
+"리소스가 없다"
+],
+"a": 0,
+"why": "응답에 <code>Allow</code> 헤더로 허용 메서드 목록을 함께 줘야 합니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>406</code> Not Acceptable",
+"options": [
+"클라이언트가 원하는 형식으로 응답할 수 없다",
+"클라이언트가 보낸 형식을 읽을 수 없다",
+"요청이 잘못됐다",
+"인코딩이 잘못됐다"
+],
+"a": 0,
+"why": "<code>Accept</code> 헤더와 관련됩니다. 반대로 보낸 형식을 못 읽으면 415예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>407</code> Proxy Authentication Required",
+"options": [
+"프록시 서버에 대한 인증이 필요하다",
+"서버 인증이 필요하다",
+"네트워크 인증이 필요하다",
+"권한이 없다"
+],
+"a": 0,
+"why": "401과 구조가 같지만 대상이 프록시입니다. <code>Proxy-Authenticate</code> 헤더가 함께 옵니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>408</code> Request Timeout",
+"options": [
+"클라이언트가 요청을 다 보내지 않아 대기 시간이 초과됐다",
+"서버 응답이 늦었다",
+"게이트웨이가 응답을 못 받았다",
+"연결이 끊겼다"
+],
+"a": 0,
+"why": "클라이언트 쪽이 느린 경우입니다. 서버나 백엔드가 느린 건 504예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>409</code> Conflict",
+"options": [
+"현재 리소스 상태와 요청이 충돌한다",
+"동시 접속이 충돌했다",
+"요청이 중복됐다",
+"버전이 낮다"
+],
+"a": 0,
+"why": "중복 가입이나 동시 수정으로 인한 버전 충돌에 씁니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>410</code> Gone",
+"options": [
+"예전에는 있었지만 영구히 사라졌다",
+"일시적으로 없다",
+"찾을 수 없다",
+"삭제 권한이 없다"
+],
+"a": 0,
+"why": "404보다 강한 표현이라 검색엔진이 색인에서 더 빨리 지웁니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>411</code> Length Required",
+"options": [
+"Content-Length 헤더가 필요하다",
+"길이가 너무 길다",
+"길이가 잘못됐다",
+"본문이 필요하다"
+],
+"a": 0,
+"why": "본문 길이를 명시하지 않으면 서버가 거부하는 경우입니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>412</code> Precondition Failed",
+"options": [
+"조건부 요청의 전제 조건이 맞지 않는다",
+"조건이 필요하다",
+"조건이 잘못됐다",
+"전제가 없다"
+],
+"a": 0,
+"why": "<code>If-Match</code>로 보낸 ETag가 서버의 현재 값과 다를 때 납니다. 덮어쓰기 사고를 막아줘요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>413</code> Content Too Large",
+"options": [
+"요청 본문이 서버가 허용하는 크기를 넘었다",
+"URL이 너무 길다",
+"헤더가 너무 크다",
+"응답이 너무 크다"
+],
+"a": 0,
+"why": "파일 업로드에서 Nginx의 <code>client_max_body_size</code>에 걸리면 자주 봅니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>414</code> URI Too Long",
+"options": [
+"요청 URL이 너무 길다",
+"본문이 너무 크다",
+"헤더가 너무 길다",
+"경로가 잘못됐다"
+],
+"a": 0,
+"why": "GET에 파라미터를 과하게 붙이면 발생합니다. 데이터가 많으면 POST 본문으로 옮기세요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>415</code> Unsupported Media Type",
+"options": [
+"클라이언트가 보낸 형식을 서버가 처리할 수 없다",
+"클라이언트가 원하는 형식을 만들 수 없다",
+"파일이 손상됐다",
+"확장자가 잘못됐다"
+],
+"a": 0,
+"why": "<code>Content-Type</code>과 관련됩니다. <code>@RequestBody</code>를 쓰면서 Content-Type을 안 붙이면 자주 만나요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>416</code> Range Not Satisfiable",
+"options": [
+"요청한 범위가 리소스 크기를 벗어났다",
+"범위가 필요하다",
+"범위가 겹친다",
+"범위를 지원하지 않는다"
+],
+"a": 0,
+"why": "파일 이어받기에서 잘못된 구간을 요청했을 때 납니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>417</code> Expectation Failed",
+"options": [
+"Expect 헤더의 기대를 충족할 수 없다",
+"예상과 다른 응답이다",
+"검증에 실패했다",
+"조건이 맞지 않는다"
+],
+"a": 0,
+"why": "<code>Expect: 100-continue</code>를 서버가 지원하지 않을 때 나옵니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>418</code> I'm a teapot",
+"options": [
+"농담으로 만들어진 코드 (커피를 끓일 수 없는 찻주전자)",
+"서버가 과열됐다",
+"요청이 우스꽝스럽다",
+"기능이 없다"
+],
+"a": 0,
+"why": "만우절 명세에서 나온 진짜 코드입니다. 표준에서 빼려다 반발이 커서 그대로 남았어요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>421</code> Misdirected Request",
+"options": [
+"이 서버가 응답할 수 없는 요청이 잘못 도착했다",
+"경로가 잘못됐다",
+"리다이렉트가 잘못됐다",
+"방향이 반대다"
+],
+"a": 0,
+"why": "HTTP/2에서 연결 재사용 때문에 엉뚱한 서버로 요청이 간 경우입니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>422</code> Unprocessable Content",
+"options": [
+"문법은 맞지만 의미상 처리할 수 없다",
+"문법이 틀렸다",
+"형식을 지원하지 않는다",
+"내용이 없다"
+],
+"a": 0,
+"why": "유효성 검증 실패에 딱 맞는 코드입니다. 400으로 뭉뚱그리는 경우가 많지만 422가 더 정확해요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>423</code> Locked",
+"options": [
+"리소스가 잠겨 있다",
+"계정이 잠겼다",
+"권한이 잠겼다",
+"파일이 사용 중이다"
+],
+"a": 0,
+"why": "WebDAV 확장 코드로, 다른 사용자가 편집 중인 문서 등에 씁니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>424</code> Failed Dependency",
+"options": [
+"앞선 요청이 실패해서 이 요청도 처리할 수 없다",
+"의존성을 찾을 수 없다",
+"라이브러리가 없다",
+"순서가 잘못됐다"
+],
+"a": 0,
+"why": "연쇄적으로 처리되는 작업에서 앞 단계 실패로 함께 실패한 경우입니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>425</code> Too Early",
+"options": [
+"재전송 위험이 있어 아직 처리할 수 없다",
+"너무 일찍 요청했다",
+"시간이 맞지 않는다",
+"준비되지 않았다"
+],
+"a": 0,
+"why": "TLS 1.3의 0-RTT 요청에서 재전송 공격을 우려해 거부하는 경우입니다."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>426</code> Upgrade Required",
+"options": [
+"다른 프로토콜로 업그레이드해야 한다",
+"버전을 올려야 한다",
+"요금제를 올려야 한다",
+"브라우저를 바꿔야 한다"
+],
+"a": 0,
+"why": "HTTPS 사용을 요구할 때 등에 씁니다. <code>Upgrade</code> 헤더로 어떤 프로토콜인지 알려줘요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>428</code> Precondition Required",
+"options": [
+"조건부 요청으로 보내야만 처리한다",
+"조건이 맞지 않는다",
+"전제 조건이 실패했다",
+"조건을 지원하지 않는다"
+],
+"a": 0,
+"why": "동시 수정 충돌을 막기 위해 <code>If-Match</code>를 강제하는 경우입니다. 412는 '조건이 안 맞음'이라 구분하세요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>429</code> Too Many Requests",
+"options": [
+"요청 횟수 제한을 초과했다",
+"동시 접속이 많다",
+"서버가 과부하다",
+"중복 요청이다"
+],
+"a": 0,
+"why": "레이트 리밋 초과입니다. <code>Retry-After</code>로 언제 다시 오면 되는지 알려주는 게 좋아요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>431</code> Request Header Fields Too Large",
+"options": [
+"요청 헤더가 너무 크다",
+"요청 본문이 너무 크다",
+"URL이 너무 길다",
+"쿠키가 너무 많다"
+],
+"a": 0,
+"why": "JWT에 정보를 과하게 담으면 만나게 됩니다. 토큰에는 최소 정보만 넣어야 하는 이유예요."
+},
+{
+"tag": "4xx",
+"type": "choice",
+"q": "<code>451</code> Unavailable For Legal Reasons",
+"options": [
+"법적 사유로 접근이 차단됐다",
+"이용 약관을 위반했다",
+"저작권이 없다",
+"지역 제한이다"
+],
+"a": 0,
+"why": "소설 '화씨 451'에서 따온 번호입니다. 검열이나 저작권 삭제 요청에 씁니다."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>500</code> Internal Server Error",
+"options": [
+"서버에서 예상 못 한 오류가 났다",
+"요청이 잘못됐다",
+"서버가 과부하다",
+"기능이 없다"
+],
+"a": 0,
+"why": "서버 측 만능 에러입니다. 처리되지 않은 예외가 대부분 여기로 떨어져요. 로그를 봐야 원인을 압니다."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>501</code> Not Implemented",
+"options": [
+"서버가 그 기능 자체를 구현하지 않았다",
+"경로가 그 메서드를 허용하지 않는다",
+"서버 오류다",
+"버전을 지원하지 않는다"
+],
+"a": 0,
+"why": "특정 경로만 막은 거라면 405가 맞습니다. 501은 서버가 아예 모르는 기능이에요."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>502</code> Bad Gateway",
+"options": [
+"게이트웨이가 상위 서버로부터 잘못된 응답을 받았다",
+"상위 서버 응답이 늦었다",
+"서버가 점검 중이다",
+"서버 내부 오류다"
+],
+"a": 0,
+"why": "톰캣이 안 떠 있을 때 Nginx가 뱉는 전형적인 코드입니다. 연결 자체가 안 된 상황이에요."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>503</code> Service Unavailable",
+"options": [
+"일시적 과부하나 점검으로 서비스할 수 없다",
+"서버가 영구히 중단됐다",
+"서비스를 찾을 수 없다",
+"권한이 없다"
+],
+"a": 0,
+"why": "곧 복구된다는 뉘앙스입니다. <code>Retry-After</code>를 주면 검색엔진이 색인을 유지해요."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>504</code> Gateway Timeout",
+"options": [
+"상위 서버가 제한 시간 안에 응답하지 않았다",
+"상위 서버가 잘못된 응답을 보냈다",
+"클라이언트가 느리다",
+"연결이 거부됐다"
+],
+"a": 0,
+"why": "502는 연결 자체가 안 됨, 504는 연결은 됐는데 너무 느림으로 구분하세요."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>505</code> HTTP Version Not Supported",
+"options": [
+"요청의 HTTP 버전을 지원하지 않는다",
+"기능을 구현하지 않았다",
+"프로토콜을 바꿔야 한다",
+"버전이 낮다"
+],
+"a": 0,
+"why": "오래된 클라이언트가 최신 서버에 붙거나 그 반대의 경우 발생합니다."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>507</code> Insufficient Storage",
+"options": [
+"저장 공간이 부족해 처리할 수 없다",
+"요청이 너무 크다",
+"메모리가 부족하다",
+"용량 제한을 초과했다"
+],
+"a": 0,
+"why": "WebDAV 확장 코드입니다. 파일 업로드 서비스에서 볼 수 있어요."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>508</code> Loop Detected",
+"options": [
+"처리 중 무한 루프가 감지됐다",
+"리다이렉트가 반복된다",
+"순환 참조가 있다",
+"재시도가 반복된다"
+],
+"a": 0,
+"why": "WebDAV에서 자기 자신을 참조하는 구조를 만났을 때 납니다."
+},
+{
+"tag": "5xx",
+"type": "choice",
+"q": "<code>511</code> Network Authentication Required",
+"options": [
+"네트워크 접속 자체에 인증이 필요하다",
+"서버 인증이 필요하다",
+"프록시 인증이 필요하다",
+"권한이 없다"
+],
+"a": 0,
+"why": "카페나 호텔 와이파이의 캡티브 포털이 대표적입니다."
+}
+];
+const KEY = 'quiz.status';
+const SIZE = 20;
+
+/* 저장소 — 로컬스토리지가 막힌 환경에서는 메모리로 자동 대체 */
+const mem = {};
+const store = {
+  ok: (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; } })(),
+  read() {
+    try {
+      const raw = this.ok ? localStorage.getItem(KEY) : mem[KEY];
+      const d = raw ? JSON.parse(raw) : null;
+      if (d && Array.isArray(d.seen) && typeof d.cycle === 'number') return d;
+    } catch (e) {}
+    return { seen: [], cycle: 1 };
+  },
+  write(d) {
+    try {
+      const raw = JSON.stringify(d);
+      if (this.ok) localStorage.setItem(KEY, raw); else mem[KEY] = raw;
+    } catch (e) {}
+  },
+  clear() {
+    try { if (this.ok) localStorage.removeItem(KEY); else delete mem[KEY]; } catch (e) {}
+  }
+};
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), foot = $('foot'), nextBtn = $('next'), hint = $('hint');
+const toTop = () => { try { window.scrollTo(0, 0); } catch (e) {} };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let deck = [], idx = 0, score = 0, streak = 0, best = 0, misses = [], locked = false, cur = null;
+let state = store.read(), lastOfCycle = false, startedCycle = 1;
+
+/* 이번 세션에 낼 문제 뽑기 — 한 바퀴 안에서는 중복 없이 */
+function draw() {
+  state = store.read();
+  let seen = state.seen.filter(i => i >= 0 && i < BANK.length);
+  let remain = BANK.map((_, i) => i).filter(i => seen.indexOf(i) === -1);
+
+  if (remain.length === 0) {
+    state = { seen: [], cycle: state.cycle + 1 };
+    store.write(state);
+    seen = [];
+    remain = BANK.map((_, i) => i);
+  }
+  startedCycle = state.cycle;
+  const picked = shuffle(remain).slice(0, SIZE);
+  lastOfCycle = remain.length <= SIZE;
+  return picked;
+}
+
+function build(indices) {
+  deck = indices.map(i => {
+    const q = BANK[i];
+    if (q.type === 'ox') return { ...q, _i: i };
+    const order = shuffle(q.options.map((t, n) => [t, n]));
+    return { ...q, _i: i, options: order.map(o => o[0]), a: order.findIndex(o => o[1] === q.a) };
+  });
+  idx = 0; score = 0; streak = 0; best = 0; misses = [];
+  foot.style.display = '';
+  $('stations').innerHTML = deck.map(() => '<div class="st"><i></i><b></b></div>').join('');
+  render();
+}
+
+function paint() {
+  const sts = $('stations').children;
+  for (let i = 0; i < sts.length; i++) sts[i].classList.toggle('now', i === idx && !locked);
+  const now = sts[idx];
+  if (now && now.scrollIntoView) { try { now.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (e) {} }
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function render() {
+  locked = false;
+  cur = deck[idx];
+  const ox = cur.type === 'ox';
+  const labels = ox ? ['O', 'X'] : cur.options;
+
+  stage.innerHTML =
+    '<div class="tag">' + (cur.tag || 'HTTP 코드 사전') + '</div>' +
+    '<h2 class="q">' + cur.q + '</h2>' +
+    '<div class="choices ' + (ox ? 'ox' : '') + '" id="ch"></div>' +
+    '<div id="vd"></div>';
+
+  const ch = $('ch');
+  labels.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button';
+    b.innerHTML = ox ? t : '<kbd>' + (i + 1) + '</kbd><span>' + t + '</span>';
+    b.onclick = () => answer(i);
+    ch.appendChild(b);
+  });
+
+  nextBtn.disabled = true;
+  nextBtn.textContent = '답을 고르세요';
+  hint.textContent = ox ? 'O / X 키로 선택, Enter로 다음' : '1~' + labels.length + ' 숫자키로 선택, Enter로 다음';
+  paint();
+  toTop();
+}
+
+function answer(pick) {
+  if (locked) return;
+  locked = true;
+
+  const correct = cur.type === 'ox' ? (cur.a === true ? 0 : 1) : cur.a;
+  const hit = pick === correct;
+  const opts = $('ch').children;
+
+  for (let i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === correct) opts[i].classList.add('right');
+    else if (i === pick) opts[i].classList.add('wrong');
+    else opts[i].classList.add('dim');
+  }
+
+  const st = $('stations').children[idx];
+  st.classList.remove('now');
+  st.classList.add(hit ? 'pass' : 'fail');
+
+  if (hit) { score++; streak++; best = Math.max(best, streak); }
+  else {
+    streak = 0;
+    misses.push({ q: cur.q, right: cur.type === 'ox' ? (cur.a ? 'O' : 'X') : cur.options[correct], why: cur.why, i: cur._i });
+  }
+
+  /* 푼 즉시 기록 — 중간에 창을 닫아도 진행이 남도록 */
+  if (cur._i !== undefined) {
+    const s = store.read();
+    if (s.cycle === startedCycle && s.seen.indexOf(cur._i) === -1) {
+      s.seen.push(cur._i);
+      store.write(s);
+    }
+  }
+
+  $('vd').innerHTML =
+    '<div class="verdict ' + (hit ? 'ok' : 'no') + '">' +
+    '<h3>' + (hit ? '맞았어요' : '아쉬워요') + '</h3><p>' + cur.why + '</p></div>';
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = idx === deck.length - 1 ? '결과 보기' : '다음 문제';
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function advance() {
+  if (nextBtn.disabled) return;
+  if (idx === deck.length - 1) return finish();
+  idx++;
+  render();
+}
+
+function finish() {
+  foot.style.display = 'none';
+  const pct = Math.round(score / deck.length * 100);
+  const s = store.read();
+  const done = s.cycle === startedCycle ? s.seen.length : BANK.length;
+  const pctAll = Math.round(done / BANK.length * 100);
+
+  stage.innerHTML =
+    '<div class="end">' +
+    '<div class="score"><b>' + pct + '</b><span>점 · ' + score + '/' + deck.length + ' · 최고 연속 ' + best + '</span></div>' +
+    '<p>' + (pct === 100 ? '이번 구간은 만점이에요.' : pct >= 80 ? '거의 다 맞혔어요.' : pct >= 50 ? '절반은 잡았어요.' : '오답 노트부터 읽어보세요.') + '</p>' +
+
+    '<div class="cycle">' +
+    '<div class="cycle-top"><b>' + startedCycle + '바퀴째</b><span>' + done + ' / ' + BANK.length + '문항 · ' + pctAll + '%</span></div>' +
+    '<div class="bar"><i style="width:' + pctAll + '%"></i></div>' +
+    '<small>' + (lastOfCycle ? '이번 바퀴를 다 돌았어요. 다음 회차부터 ' + (startedCycle + 1) + '바퀴가 시작됩니다.' :
+      '다음 회차에는 아직 안 나온 ' + (BANK.length - done) + '문항 중에서 출제돼요.') +
+    (store.ok ? '' : ' (이 환경에서는 저장이 안 되니 파일을 내려받아 열면 진행이 유지됩니다)') + '</small></div>' +
+
+    (misses.length ? '<h2>오답 노트 ' + misses.length + '</h2>' +
+      misses.map(m => '<div class="miss"><h4>' + m.q + '</h4><p><b>' + m.right + '</b> — ' + m.why + '</p></div>').join('') : '') +
+
+    '<div class="actions">' +
+    (misses.length ? '<button class="next" id="again">틀린 ' + misses.length + '문제만 다시</button>' : '') +
+    '<button class="ghost" id="more">다음 ' + Math.min(SIZE, Math.max(BANK.length - done, SIZE)) + '문항 이어서</button>' +
+    '<button class="ghost quiet" id="reset">진행 기록 초기화</button>' +
+    '</div></div>';
+
+  if ($('again')) $('again').onclick = () => build(misses.map(m => m.i));
+  $('more').onclick = () => build(draw());
+  $('reset').onclick = openAdmin;
+  toTop();
+}
+
+nextBtn.onclick = advance;
+
+/* 관리자 초기화 — 비밀번호는 오조작 방지용이지 보안 장치가 아님 */
+const PIN = '1111';
+const mask = $('mask'), pin = $('pin'), warn = $('warn');
+let modalOpen = false;
+
+function openAdmin() {
+  modalOpen = true;
+  mask.hidden = false;
+  pin.value = '';
+  warn.textContent = '';
+  pin.classList.remove('shake');
+  setTimeout(() => pin.focus(), 30);
+}
+
+function closeAdmin() {
+  modalOpen = false;
+  mask.hidden = true;
+}
+
+function tryReset() {
+  if (pin.value !== PIN) {
+    warn.textContent = '비밀번호가 맞지 않습니다.';
+    pin.classList.remove('shake');
+    void pin.offsetWidth;
+    pin.classList.add('shake');
+    pin.value = '';
+    pin.focus();
+    return;
+  }
+  store.clear();
+  state = { seen: [], cycle: 1 };
+  closeAdmin();
+  build(draw());
+}
+
+$('admin').onclick = openAdmin;
+$('cancel').onclick = closeAdmin;
+$('confirm').onclick = tryReset;
+mask.onclick = e => { if (e.target === mask) closeAdmin(); };
+pin.onkeydown = e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); tryReset(); }
+  if (e.key === 'Escape') closeAdmin();
+};
+
+document.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeAdmin(); return; }
+  if (e.key === 'Enter' || e.key === ' ') { if (!nextBtn.disabled && foot.style.display !== 'none') { e.preventDefault(); advance(); } return; }
+  if (locked || !$('ch')) return;
+  const ch = $('ch').children;
+  if (cur.type === 'ox') {
+    if (e.key === 'o' || e.key === 'O' || e.key === 'ㅐ') answer(0);
+    if (e.key === 'x' || e.key === 'X' || e.key === 'ㅌ') answer(1);
+  } else {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= ch.length) answer(n - 1);
+  }
+});
+
+build(draw());
+</script>
+</body>
+</html>
