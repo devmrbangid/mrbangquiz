@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E6186C">
+<title>영어 단어 · 출퇴근 노선</title>
+<style>
+:root{
+  --line:#E6186C;
+  --ink:#0E1116;
+  --ink-2:#161B22;
+  --ink-3:#1E252F;
+  --paper:#F2F4F7;
+  --mute:#8B95A5;
+  --ok:#39C07C;
+  --no:#F2584D;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--paper);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  font-size:16px;line-height:1.6;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+code,.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+.rail{position:sticky;top:0;z-index:20;background:linear-gradient(var(--ink) 78%,rgba(14,17,22,0));padding:calc(14px + env(safe-area-inset-top)) 18px 16px}
+.rail-top{display:flex;align-items:center;gap:10px}
+.badge{width:30px;height:30px;flex:none;border-radius:50%;background:var(--line);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.subject{font-size:15px;font-weight:700;letter-spacing:-.02em;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subject small{display:block;font-size:11px;font-weight:500;color:var(--mute);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.counter{margin-left:auto;text-align:right;flex:none;padding-left:8px}
+.counter b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.counter span{font-size:11px;color:var(--mute);display:block;margin-top:-2px}
+
+.track{margin-top:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.stations{display:flex;align-items:center;gap:0;height:22px;padding-right:20px}
+.st{flex:none;display:flex;align-items:center}
+.st i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3);border:2px solid var(--ink-3);transition:background .2s,border-color .2s,transform .2s}
+.st b{width:14px;height:2px;background:var(--ink-3);flex:none}
+.st.pass i{background:var(--line);border-color:var(--line)}
+.st.pass b{background:var(--line)}
+.st.fail i{background:transparent;border-color:var(--no)}
+.st.fail b{background:var(--ink-3)}
+.st.now i{transform:scale(1.7);background:var(--paper);border-color:var(--paper)}
+
+main{flex:1;padding:6px 18px 20px;max-width:640px;width:100%;margin:0 auto}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--line);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);border-radius:999px;padding:3px 10px;margin-bottom:14px}
+.q{font-size:23px;line-height:1.45;font-weight:800;letter-spacing:-.035em;margin:0 0 22px;word-break:keep-all}
+.q code{font-size:.92em;font-weight:700;background:var(--ink-3);padding:2px 7px;border-radius:6px;letter-spacing:0}
+
+.choices{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:58px;padding:15px 16px;background:var(--ink-2);border:1.5px solid var(--ink-3);border-radius:var(--r);color:var(--paper);font:inherit;font-size:15.5px;line-height:1.45;text-align:left;letter-spacing:-.02em;word-break:keep-all;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.opt:active{transform:scale(.985)}
+.opt:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.opt kbd{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;background:var(--ink-3);color:var(--mute);display:grid;place-items:center;font:700 12px/1 ui-monospace,monospace}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--ink-2))}
+.opt.right kbd{background:var(--ok);color:#06110B}
+.opt.wrong{border-color:var(--no);background:color-mix(in srgb,var(--no) 13%,var(--ink-2))}
+.opt.wrong kbd{background:var(--no);color:#2A0906}
+.opt.dim{opacity:.4}
+.opt[disabled]{cursor:default}
+
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.ox .opt{justify-content:center;align-items:center;min-height:104px;font-size:38px;font-weight:800;padding:0}
+.ox .opt kbd{display:none}
+
+.verdict{margin-top:18px;border-radius:var(--r);padding:16px 17px;background:var(--ink-2);border-left:4px solid var(--mute)}
+.verdict.ok{border-left-color:var(--ok)}
+.verdict.no{border-left-color:var(--no)}
+.verdict h3{margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.verdict.ok h3{color:var(--ok)}
+.verdict.no h3{color:var(--no)}
+.verdict p{margin:0;font-size:14.5px;line-height:1.65;color:#C9D2DE;word-break:keep-all}
+.verdict code{background:var(--ink-3);padding:1px 6px;border-radius:5px;font-size:.92em}
+
+footer{position:sticky;bottom:0;padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(14,17,22,0),var(--ink) 30%);max-width:640px;width:100%;margin:0 auto}
+.next{width:100%;min-height:56px;border:0;border-radius:var(--r);background:var(--line);color:#fff;font:800 17px/1 inherit;letter-spacing:-.02em;cursor:pointer;transition:opacity .15s,transform .1s}
+.next:active{transform:scale(.99)}
+.next:disabled{opacity:.22;cursor:default}
+.next:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.hint{text-align:center;font-size:11.5px;color:var(--mute);margin-top:9px;letter-spacing:-.01em}
+
+.end{padding:10px 0 0}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.score b{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.score span{font-size:17px;color:var(--mute);font-weight:600}
+.end>p{color:var(--mute);font-size:14px;margin:0 0 22px}
+
+.cycle{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:26px}
+.cycle-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.cycle-top b{font-size:13.5px;font-weight:700;letter-spacing:-.02em}
+.cycle-top span{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--ink-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--line);border-radius:3px;transition:width .5s}
+.cycle small{display:block;margin-top:9px;font-size:11.5px;color:var(--mute);line-height:1.5}
+
+.end h2{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--mute);margin:0 0 12px}
+.miss{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;border-left:4px solid var(--no)}
+.miss h4{margin:0 0 7px;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.45;word-break:keep-all}
+.miss p{margin:0;font-size:13.5px;color:#B4BEC9;line-height:1.6;word-break:keep-all}
+.miss p b{color:var(--ok);font-weight:700}
+.actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.ghost{width:100%;min-height:52px;border-radius:var(--r);background:transparent;border:1.5px solid var(--ink-3);color:var(--paper);font:700 15.5px/1 inherit;cursor:pointer}
+.ghost:active{background:var(--ink-2)}
+.ghost:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.ghost.quiet{color:var(--mute);border-color:transparent;min-height:44px;font-size:13.5px;font-weight:600}
+.ghost.linkbtn{display:grid;place-items:center;text-decoration:none;line-height:1}
+
+/* 관리자 초기화 */
+.admin,.home{
+  width:30px;height:30px;flex:none;
+  border:1.5px solid var(--ink-3);border-radius:9px;
+  background:transparent;color:var(--mute);
+  display:grid;place-items:center;cursor:pointer;padding:0;
+  text-decoration:none;
+}
+.home{margin-left:8px}
+.admin{margin-left:6px}
+.admin:active,.home:active{background:var(--ink-2)}
+.admin:focus-visible,.home:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.admin svg,.home svg{width:15px;height:15px;display:block}
+
+.mask{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(6,8,11,.72);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:22px;
+}
+.mask[hidden]{display:none}
+.modal{
+  width:100%;max-width:340px;
+  background:var(--ink-2);border:1px solid var(--ink-3);border-radius:18px;
+  padding:22px 20px 18px;
+}
+.modal h3{margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em}
+.modal p{margin:0 0 16px;font-size:13.5px;color:var(--mute);line-height:1.55;word-break:keep-all}
+.pin{
+  width:100%;height:54px;margin-bottom:10px;
+  background:var(--ink);border:1.5px solid var(--ink-3);border-radius:var(--r);
+  color:var(--paper);font:800 24px/1 ui-monospace,monospace;
+  text-align:center;letter-spacing:.5em;text-indent:.5em;
+}
+.pin:focus{outline:none;border-color:var(--line)}
+.pin.shake{border-color:var(--no);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.warn{min-height:18px;margin:0 0 12px;font-size:12.5px;color:var(--no);text-align:center}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;min-height:48px;border-radius:var(--r);font:700 15px/1 inherit;cursor:pointer;border:0}
+.btn-no{background:transparent;border:1.5px solid var(--ink-3);color:var(--paper)}
+.btn-yes{background:var(--no);color:#fff;font-weight:800}
+.modal-btns button:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.q{font-size:26px}}
+</style>
+</head>
+<body>
+
+<header class="rail">
+  <div class="rail-top">
+    <div class="badge">8</div>
+    <div class="subject">영어 단어<small>비즈니스 · 기술 어휘</small></div>
+    <div class="counter"><b id="cnt">0/0</b><span id="streak">연속 0</span></div>
+    <a class="home" href="index.html" aria-label="노선 목록으로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.7V20h14V9.7"/>
+      </svg>
+    </a>
+    <button class="admin" id="admin" type="button" aria-label="진행 기록 초기화">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+  <div class="track"><div class="stations" id="stations"></div></div>
+</header>
+
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <h3 id="mt">진행 기록 초기화</h3>
+    <p>지금까지 푼 기록을 지우고 100문항 전체에서 다시 무작위로 출제합니다.</p>
+    <input class="pin" id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
+    <p class="warn" id="warn"></p>
+    <div class="modal-btns">
+      <button class="btn-no" id="cancel" type="button">취소</button>
+      <button class="btn-yes" id="confirm" type="button">초기화</button>
+    </div>
+  </div>
+</div>
+
+<main id="stage"><noscript><div style="background:#161B22;border-left:4px solid #F2584D;border-radius:14px;padding:16px 17px;margin-top:10px"><h3 style="margin:0 0 6px;font-size:14px;color:#F2584D">자바스크립트가 실행되지 않았어요</h3><p style="margin:0;font-size:14px;color:#C9D2DE;line-height:1.6;word-break:keep-all">아이폰 파일 앱의 미리보기(Quick Look)로 열면 이 화면이 나옵니다. 파일에는 문제가 없으니, 실제 브라우저로 열거나 웹에 올려서 접속해 주세요.</p></div></noscript></main>
+
+<footer id="foot">
+  <button class="next" id="next" disabled>답을 고르세요</button>
+  <div class="hint" id="hint">숫자키·O·X로 선택, Enter로 다음</div>
+</footer>
+
+<script>
+const BANK = [
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>leverage</b>",
+"options": [
+"활용하다, 지렛대로 삼다",
+"포기하다",
+"연기하다",
+"축소하다"
+],
+"a": 0,
+"why": "명사로는 지렛대, 동사로는 가진 자원을 최대한 활용한다는 뜻입니다. <i>We can leverage our existing data.</i>"
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>deliverable</b>",
+"options": [
+"산출물, 인도해야 할 결과물",
+"배송비",
+"납기일",
+"계약서"
+],
+"a": 0,
+"why": "프로젝트에서 최종적으로 넘겨야 할 결과물입니다. <i>The deliverables are due Friday.</i>"
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>stakeholder</b>",
+"options": [
+"이해관계자",
+"주주만 지칭",
+"경쟁사",
+"협력업체"
+],
+"a": 0,
+"why": "주주(shareholder)보다 넓은 개념으로, 그 일에 이해가 걸린 모든 사람을 뜻합니다."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>bandwidth</b> (업무 맥락)",
+"options": [
+"감당할 수 있는 여력, 시간적 여유",
+"예산",
+"인원수",
+"네트워크 속도만"
+],
+"a": 0,
+"why": "원래는 대역폭이지만 회사에서는 여력을 뜻합니다. <i>I don't have the bandwidth for this.</i>"
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>escalate</b>",
+"options": [
+"상급자에게 보고해 문제를 올리다",
+"축소하다",
+"연기하다",
+"해결하다"
+],
+"a": 0,
+"why": "자기 선에서 못 푸는 문제를 위로 넘기는 것입니다. 상황이 악화된다는 뜻으로도 쓰여요."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>streamline</b>",
+"options": [
+"간소화하다, 효율화하다",
+"확장하다",
+"중단하다",
+"분리하다"
+],
+"a": 0,
+"why": "불필요한 단계를 없애 흐름을 매끄럽게 만든다는 뜻입니다."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>scope creep</b>",
+"options": [
+"범위가 슬금슬금 늘어나는 현상",
+"일정 지연",
+"예산 초과",
+"인력 부족"
+],
+"a": 0,
+"why": "프로젝트에서 요구사항이 계속 추가되는 상황을 가리킵니다. creep은 기어가듯 서서히 움직인다는 뜻이에요."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>ballpark</b>",
+"options": [
+"대략적인 추정치",
+"야구장 계약",
+"최종 확정",
+"최소 기준"
+],
+"a": 0,
+"why": "<i>Can you give me a ballpark figure?</i> 정확하지 않아도 되니 대충 얼마인지 알려달라는 뜻입니다."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>due diligence</b>",
+"options": [
+"사전 실사, 충분한 사전 조사",
+"근면 성실",
+"기한 연장",
+"적법 절차"
+],
+"a": 0,
+"why": "투자나 계약 전에 상대를 꼼꼼히 검증하는 과정입니다."
+},
+{
+"tag": "비즈니스",
+"type": "choice",
+"q": "<b>onboarding</b>",
+"options": [
+"신규 인력이 조직에 적응하도록 돕는 과정",
+"탑승 수속",
+"계약 체결",
+"성과 평가"
+],
+"a": 0,
+"why": "신입 교육과 초기 정착 지원을 통칭합니다. 반대는 offboarding이에요."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>mitigate</b>",
+"options": [
+"완화하다, 경감시키다",
+"악화시키다",
+"무시하다",
+"증명하다"
+],
+"a": 0,
+"why": "위험이나 피해를 줄이는 것입니다. <i>mitigate the risk</i>로 자주 쓰여요."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>facilitate</b>",
+"options": [
+"촉진하다, 쉽게 만들다",
+"방해하다",
+"시설을 짓다",
+"평가하다"
+],
+"a": 0,
+"why": "회의를 매끄럽게 진행하는 사람을 facilitator라고 합니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>allocate</b>",
+"options": [
+"할당하다, 배분하다",
+"위치를 찾다",
+"회수하다",
+"축적하다"
+],
+"a": 0,
+"why": "자원이나 예산을 나눠 배정하는 것입니다. 메모리 할당에도 같은 단어를 써요."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>consolidate</b>",
+"options": [
+"통합하다, 공고히 하다",
+"분리하다",
+"상담하다",
+"소비하다"
+],
+"a": 0,
+"why": "여러 개를 하나로 합치거나 기반을 튼튼히 한다는 뜻입니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>anticipate</b>",
+"options": [
+"예상하다, 미리 대비하다",
+"참여하다",
+"기대에 못 미치다",
+"취소하다"
+],
+"a": 0,
+"why": "단순히 기다리는 게 아니라 미리 내다보고 준비한다는 뉘앙스가 있습니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>comply with</b>",
+"options": [
+"규정을 준수하다",
+"불평하다",
+"완성하다",
+"보완하다"
+],
+"a": 0,
+"why": "명사형 compliance는 규정 준수를 뜻합니다. complain(불평하다)과 헷갈리기 쉬워요."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>reconcile</b>",
+"options": [
+"조정하다, 대조해 일치시키다",
+"재고하다",
+"거절하다",
+"기록하다"
+],
+"a": 0,
+"why": "회계에서 장부를 대조하는 것도, 갈등을 화해시키는 것도 이 단어입니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>delegate</b>",
+"options": [
+"위임하다, 대표를 보내다",
+"삭제하다",
+"지연시키다",
+"선언하다"
+],
+"a": 0,
+"why": "명사로는 대표단을 뜻합니다. delete와 철자가 비슷하니 주의하세요."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>oversee</b>",
+"options": [
+"감독하다, 총괄하다",
+"간과하다",
+"해외로 보내다",
+"검토하다"
+],
+"a": 0,
+"why": "overlook(간과하다)과 뜻이 정반대라 자주 혼동됩니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>substantiate</b>",
+"options": [
+"근거를 들어 입증하다",
+"대체하다",
+"실체화하다",
+"줄이다"
+],
+"a": 0,
+"why": "주장에 증거를 붙이는 것입니다. <i>substantiate the claim</i>"
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>expedite</b>",
+"options": [
+"신속히 처리하다",
+"탐험하다",
+"만료시키다",
+"연기하다"
+],
+"a": 0,
+"why": "절차를 앞당겨 빨리 끝내는 것입니다. <i>expedite the shipping</i>"
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>undermine</b>",
+"options": [
+"약화시키다, 은근히 훼손하다",
+"밑줄을 긋다",
+"채굴하다",
+"지지하다"
+],
+"a": 0,
+"why": "아래를 파낸다는 어원에서 나왔습니다. 신뢰나 권위를 서서히 무너뜨릴 때 씁니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>advocate</b>",
+"options": [
+"옹호하다, 지지를 표명하다",
+"반대하다",
+"조언을 구하다",
+"광고하다"
+],
+"a": 0,
+"why": "명사로는 옹호자나 변호인입니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>emphasize</b>",
+"options": [
+"강조하다",
+"공감하다",
+"고용하다",
+"비우다"
+],
+"a": 0,
+"why": "empathize(공감하다)와 발음이 비슷해 헷갈리기 쉽습니다."
+},
+{
+"tag": "동사",
+"type": "choice",
+"q": "<b>compensate for</b>",
+"options": [
+"보상하다, 상쇄하다",
+"비교하다",
+"경쟁하다",
+"완성하다"
+],
+"a": 0,
+"why": "명사 compensation은 보상금이나 급여를 뜻합니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>feasible</b>",
+"options": [
+"실행 가능한",
+"취약한",
+"유연한",
+"치명적인"
+],
+"a": 0,
+"why": "타당성 조사를 feasibility study라고 합니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>redundant</b>",
+"options": [
+"중복된, 불필요한 (영국에서는 정리해고된)",
+"축소된",
+"필수적인",
+"축약된"
+],
+"a": 0,
+"why": "기술 문맥에서는 장애 대비 이중화를 뜻하는 긍정적 의미로도 씁니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>ambiguous</b>",
+"options": [
+"모호한, 여러 해석이 가능한",
+"야심찬",
+"명확한",
+"광범위한"
+],
+"a": 0,
+"why": "ambitious(야심찬)와 철자가 비슷하니 주의하세요."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>robust</b>",
+"options": [
+"튼튼한, 견고한",
+"거친",
+"로봇 같은",
+"단순한"
+],
+"a": 0,
+"why": "시스템이 예외 상황에서도 잘 버틴다는 뜻으로 자주 씁니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>viable</b>",
+"options": [
+"실행 가능하고 지속 가능한",
+"눈에 보이는",
+"활발한",
+"치명적인"
+],
+"a": 0,
+"why": "MVP(Minimum Viable Product)의 그 V입니다. 최소한으로 작동하는 제품이라는 뜻이죠."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>tentative</b>",
+"options": [
+"잠정적인, 확정되지 않은",
+"의도적인",
+"긴장한",
+"시험적인 자신감"
+],
+"a": 0,
+"why": "<i>a tentative schedule</i>은 바뀔 수 있는 임시 일정입니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>comprehensive</b>",
+"options": [
+"포괄적인, 종합적인",
+"이해하기 쉬운",
+"압축된",
+"경쟁적인"
+],
+"a": 0,
+"why": "comprehensible(이해할 수 있는)과 구분해서 기억하세요."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>obsolete</b>",
+"options": [
+"더 이상 쓰이지 않는, 구식의",
+"절대적인",
+"의무적인",
+"모호한"
+],
+"a": 0,
+"why": "기술 문서에서 폐기 예정 기능을 표시할 때 자주 등장합니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>crucial</b>",
+"options": [
+"결정적으로 중요한",
+"잔인한",
+"순환하는",
+"대략적인"
+],
+"a": 0,
+"why": "critical, vital, pivotal도 비슷한 강도의 표현입니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>eligible</b>",
+"options": [
+"자격이 있는",
+"읽기 쉬운",
+"선택적인",
+"우아한"
+],
+"a": 0,
+"why": "legible(읽기 쉬운)과 철자가 비슷합니다. <i>eligible for the discount</i>"
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>prone to</b>",
+"options": [
+"~하기 쉬운, ~하는 경향이 있는",
+"~을 증명하는",
+"~에 반대하는",
+"~을 촉진하는"
+],
+"a": 0,
+"why": "주로 부정적인 것에 씁니다. <i>error-prone code</i>는 오류가 잦은 코드예요."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>subsequent</b>",
+"options": [
+"뒤이어 오는, 후속의",
+"결과적인",
+"부수적인",
+"순차적인 실행"
+],
+"a": 0,
+"why": "<i>subsequent meetings</i>는 이후에 이어지는 회의들입니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>arbitrary</b>",
+"options": [
+"임의적인, 자의적인",
+"중재하는",
+"정확한",
+"의무적인"
+],
+"a": 0,
+"why": "기준 없이 마음대로 정했다는 부정적 뉘앙스가 있습니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>inherent</b>",
+"options": [
+"본질적으로 내재된",
+"상속받은",
+"일관된",
+"불확실한"
+],
+"a": 0,
+"why": "<i>inherent risk</i>는 그 일에 원래부터 따라붙는 위험입니다."
+},
+{
+"tag": "형용사",
+"type": "choice",
+"q": "<b>concise</b>",
+"options": [
+"간결한",
+"정확한",
+"연속적인",
+"완전한"
+],
+"a": 0,
+"why": "짧으면서도 필요한 내용을 담고 있다는 긍정적 표현입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>discrepancy</b>",
+"options": [
+"불일치, 차이",
+"재량권",
+"묘사",
+"분열"
+],
+"a": 0,
+"why": "숫자나 기록이 서로 맞지 않을 때 씁니다. <i>a discrepancy in the report</i>"
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>consensus</b>",
+"options": [
+"합의, 의견 일치",
+"인구조사",
+"결과",
+"동의서"
+],
+"a": 0,
+"why": "census(인구조사)와 철자가 비슷합니다. <i>reach a consensus</i>"
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>rationale</b>",
+"options": [
+"근거, 논리적 이유",
+"합리성 자체",
+"비율",
+"배급"
+],
+"a": 0,
+"why": "어떤 결정을 내린 이유와 논리를 뜻합니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>constraint</b>",
+"options": [
+"제약 조건",
+"건설",
+"일관성",
+"계약"
+],
+"a": 0,
+"why": "DB의 제약조건도 같은 단어입니다. <i>time constraints</i>는 시간적 제약이에요."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>trade-off</b>",
+"options": [
+"하나를 얻기 위해 다른 것을 포기하는 관계",
+"무역 협정",
+"거래 중단",
+"교환 조건 없는 이득"
+],
+"a": 0,
+"why": "성능과 비용처럼 둘 다 가질 수 없는 상황을 표현합니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>bottleneck</b>",
+"options": [
+"전체 속도를 좌우하는 병목 지점",
+"막다른 길",
+"마감 기한",
+"최소 요건"
+],
+"a": 0,
+"why": "병 목처럼 좁아 흐름이 막히는 곳입니다. 성능 개선은 여기부터 찾아야 해요."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>prerequisite</b>",
+"options": [
+"사전에 반드시 필요한 조건",
+"우선순위",
+"예약",
+"전제된 결론"
+],
+"a": 0,
+"why": "수강 선수과목이나 설치 필수 요건에 씁니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>milestone</b>",
+"options": [
+"중요한 중간 목표 지점",
+"최종 마감",
+"이정표 문서",
+"측정 단위"
+],
+"a": 0,
+"why": "프로젝트에서 진행 상황을 점검하는 주요 시점입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>contingency</b>",
+"options": [
+"만일의 사태, 그에 대한 대비",
+"연속성",
+"우연의 일치",
+"의존성"
+],
+"a": 0,
+"why": "<i>contingency plan</i>은 비상 계획입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>overhead</b> (업무 맥락)",
+"options": [
+"부수적으로 드는 비용이나 부담",
+"머리 위 공간",
+"관리자",
+"초과 근무"
+],
+"a": 0,
+"why": "직접 성과와 무관하게 들어가는 간접 비용이나 처리 부담을 뜻합니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>turnover</b>",
+"options": [
+"이직률 또는 매출액",
+"전환점",
+"초과분",
+"인수인계"
+],
+"a": 0,
+"why": "문맥에 따라 달라집니다. <i>employee turnover</i>는 이직률, <i>annual turnover</i>는 연매출이에요."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>outage</b>",
+"options": [
+"서비스 중단, 정전",
+"외출",
+"산출량",
+"경계"
+],
+"a": 0,
+"why": "서버 장애 공지에 자주 등장합니다. <i>a scheduled outage</i>는 예정된 점검이에요."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>workaround</b>",
+"options": [
+"근본 해결은 아니지만 우회하는 임시 방법",
+"작업 환경",
+"업무 순환",
+"해결책 없음"
+],
+"a": 0,
+"why": "버그 리포트에서 자주 보이는 단어입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>backlog</b>",
+"options": [
+"아직 처리하지 못하고 쌓인 작업 목록",
+"이전 기록",
+"후속 조치",
+"백업 로그"
+],
+"a": 0,
+"why": "애자일에서 제품 백로그는 앞으로 할 일의 목록입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>threshold</b>",
+"options": [
+"임계값, 문턱",
+"위협",
+"실",
+"경로"
+],
+"a": 0,
+"why": "이 값을 넘으면 알림이 울린다는 식으로 씁니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>caveat</b>",
+"options": [
+"주의해야 할 단서, 유의사항",
+"공동",
+"동굴",
+"취소"
+],
+"a": 0,
+"why": "<i>with one caveat</i>는 한 가지만 주의하면 된다는 뜻입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>redundancy</b> (기술 맥락)",
+"options": [
+"장애 대비를 위한 이중화",
+"불필요한 반복만",
+"축소",
+"여분의 예산"
+],
+"a": 0,
+"why": "같은 단어가 문맥에 따라 부정적일 수도 긍정적일 수도 있습니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>compliance</b>",
+"options": [
+"규정 준수",
+"불만 사항",
+"보완재",
+"완성도"
+],
+"a": 0,
+"why": "금융이나 보안 분야에서 매우 자주 등장하는 단어입니다."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>liability</b>",
+"options": [
+"법적 책임 또는 부채",
+"가능성",
+"신뢰성",
+"자산"
+],
+"a": 0,
+"why": "회계에서는 부채입니다. 자산(asset)의 반대편이죠."
+},
+{
+"tag": "명사",
+"type": "choice",
+"q": "<b>incentive</b>",
+"options": [
+"행동을 유도하는 유인책",
+"보험료",
+"사건",
+"집중"
+],
+"a": 0,
+"why": "금전적 보상만이 아니라 동기를 부여하는 모든 요인을 뜻합니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>follow up on</b>",
+"options": [
+"후속 조치를 취하다, 진행 상황을 확인하다",
+"뒤따라가다",
+"포기하다",
+"반복하다"
+],
+"a": 0,
+"why": "메일에서 <i>Just following up on my previous email.</i> 형태로 매우 자주 씁니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>reach out to</b>",
+"options": [
+"연락을 취하다",
+"손을 뻗다",
+"도달하다",
+"제외하다"
+],
+"a": 0,
+"why": "contact보다 부드럽고 적극적인 뉘앙스입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>touch base</b>",
+"options": [
+"짧게 소통하며 상황을 공유하다",
+"기초를 다지다",
+"기지를 방문하다",
+"접촉하다"
+],
+"a": 0,
+"why": "야구에서 유래한 표현입니다. <i>Let's touch base next week.</i>"
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>circle back</b>",
+"options": [
+"나중에 다시 이야기하다",
+"되돌아가다",
+"순환시키다",
+"취소하다"
+],
+"a": 0,
+"why": "지금은 넘어가고 나중에 다시 다루자는 뜻입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>hold off on</b>",
+"options": [
+"보류하다, 미루다",
+"붙잡다",
+"떨어뜨리다",
+"방어하다"
+],
+"a": 0,
+"why": "<i>Let's hold off on the decision.</i> 결정을 잠시 미루자는 뜻이에요."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>run into</b>",
+"options": [
+"우연히 마주치다, 문제에 부딪히다",
+"달려들다",
+"실행하다",
+"진입하다"
+],
+"a": 0,
+"why": "<i>I ran into an issue.</i> 문제가 생겼다는 표현으로 자주 씁니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>roll out</b>",
+"options": [
+"새 기능이나 서비스를 출시·배포하다",
+"말아 올리다",
+"철수하다",
+"반복하다"
+],
+"a": 0,
+"why": "점진적 배포를 rolling release라고도 합니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>look into</b>",
+"options": [
+"조사하다, 살펴보다",
+"들여다보다만",
+"기대하다",
+"무시하다"
+],
+"a": 0,
+"why": "<i>I'll look into it.</i>는 알아보겠다는 정중한 응답입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>account for</b>",
+"options": [
+"설명하다 또는 차지하다",
+"계좌를 열다",
+"책임을 지다만",
+"계산하다"
+],
+"a": 0,
+"why": "<i>It accounts for 30% of sales.</i>는 매출의 30%를 차지한다는 뜻입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>come up with</b>",
+"options": [
+"아이디어나 해결책을 생각해내다",
+"따라오다",
+"마주치다",
+"합의하다"
+],
+"a": 0,
+"why": "<i>We came up with a new approach.</i>"
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>put off</b>",
+"options": [
+"연기하다",
+"제거하다",
+"입다",
+"진정시키다"
+],
+"a": 0,
+"why": "postpone의 구어체 표현입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>carry out</b>",
+"options": [
+"수행하다, 실행하다",
+"가지고 나가다",
+"견디다",
+"이월하다"
+],
+"a": 0,
+"why": "<i>carry out a test</i>는 테스트를 수행한다는 뜻입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>bring up</b>",
+"options": [
+"화제를 꺼내다",
+"가져오다",
+"기르다만",
+"올리다"
+],
+"a": 0,
+"why": "<i>I'd like to bring up one issue.</i> 회의에서 안건을 꺼낼 때 씁니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>go over</b>",
+"options": [
+"검토하다, 훑어보다",
+"넘어가다",
+"초과하다",
+"반복하다"
+],
+"a": 0,
+"why": "<i>Let's go over the numbers.</i> 숫자를 함께 살펴보자는 뜻입니다."
+},
+{
+"tag": "구동사",
+"type": "choice",
+"q": "<b>rule out</b>",
+"options": [
+"가능성을 배제하다",
+"규칙을 만들다",
+"판결하다",
+"제외 없이 포함하다"
+],
+"a": 0,
+"why": "원인을 하나씩 지워나갈 때 씁니다. <i>We can rule out a network issue.</i>"
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>affect</b>와 <b>effect</b>의 차이는?",
+"options": [
+"affect는 주로 동사(영향을 주다), effect는 주로 명사(효과)",
+"반대",
+"같은 뜻",
+"effect만 동사"
+],
+"a": 0,
+"why": "드물게 effect가 동사로 쓰이면 '초래하다'는 뜻입니다. 시험에 자주 나오는 구분이에요."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>principal</b>과 <b>principle</b>의 차이는?",
+"options": [
+"principal은 주요한·교장·원금, principle은 원칙",
+"반대",
+"같은 뜻",
+"둘 다 원칙"
+],
+"a": 0,
+"why": "principle은 오직 명사로 원칙만 뜻합니다."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>complement</b>와 <b>compliment</b>의 차이는?",
+"options": [
+"complement는 보완하다, compliment는 칭찬하다",
+"반대",
+"같은 뜻",
+"둘 다 칭찬"
+],
+"a": 0,
+"why": "complement는 complete와 어원이 같아 완전하게 만든다는 의미입니다."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>ensure</b>, <b>insure</b>, <b>assure</b>의 구분으로 옳은 것은?",
+"options": [
+"ensure는 보장하다, insure는 보험을 들다, assure는 안심시키다",
+"모두 같음",
+"insure만 보장",
+"assure는 확인하다"
+],
+"a": 0,
+"why": "사람을 대상으로 안심시킬 때는 assure를 씁니다."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>economic</b>과 <b>economical</b>의 차이는?",
+"options": [
+"economic은 경제의, economical은 경제적인(절약되는)",
+"반대",
+"같은 뜻",
+"economical만 사용"
+],
+"a": 0,
+"why": "<i>economical car</i>는 연비가 좋은 차입니다."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>continual</b>과 <b>continuous</b>의 차이는?",
+"options": [
+"continual은 반복적으로 계속, continuous는 끊김 없이 계속",
+"반대",
+"같은 뜻",
+"continual이 더 강함"
+],
+"a": 0,
+"why": "CI에서 말하는 Continuous Integration은 끊김 없는 통합이라는 의미입니다."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>imply</b>와 <b>infer</b>의 차이는?",
+"options": [
+"imply는 말하는 쪽이 암시하고, infer는 듣는 쪽이 추론함",
+"반대",
+"같은 뜻",
+"둘 다 암시"
+],
+"a": 0,
+"why": "방향이 반대입니다. 화자가 imply하면 청자가 infer하는 구조예요."
+},
+{
+"tag": "혼동어",
+"type": "choice",
+"q": "<b>fewer</b>와 <b>less</b>의 차이는?",
+"options": [
+"fewer는 셀 수 있는 명사, less는 셀 수 없는 명사",
+"반대",
+"같은 뜻",
+"구분 없음"
+],
+"a": 0,
+"why": "<i>fewer errors, less time</i>처럼 씁니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>at your earliest convenience</b>",
+"options": [
+"가능한 한 빨리 (정중한 표현)",
+"편할 때 아무 때나",
+"이번 주 안에",
+"즉시"
+],
+"a": 0,
+"why": "ASAP보다 부드럽지만 여전히 빨리 해달라는 요청입니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>Please find attached</b>",
+"options": [
+"첨부 파일을 확인해 주세요",
+"첨부를 찾지 못했습니다",
+"붙여넣기 해주세요",
+"연결되었습니다"
+],
+"a": 0,
+"why": "이메일 첨부를 알리는 정형화된 표현입니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>per your request</b>",
+"options": [
+"요청하신 대로",
+"요청당 비용",
+"요청을 거절하며",
+"추가 요청으로"
+],
+"a": 0,
+"why": "<i>As per your request</i> 형태로도 씁니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>loop in</b>",
+"options": [
+"관련자를 대화에 참여시키다",
+"반복하다",
+"제외하다",
+"순환시키다"
+],
+"a": 0,
+"why": "<i>I'll loop in the design team.</i> 메일 참조에 넣겠다는 뜻으로도 씁니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>heads-up</b>",
+"options": [
+"미리 알려주는 귀띔",
+"고개를 들라는 지시",
+"상향 조정",
+"우선순위"
+],
+"a": 0,
+"why": "<i>Just a heads-up: the server will be down tonight.</i>"
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>pending</b>",
+"options": [
+"처리 대기 중인, 미결의",
+"완료된",
+"취소된",
+"긴급한"
+],
+"a": 0,
+"why": "<i>The approval is still pending.</i> 승인이 아직 안 났다는 뜻입니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>on hold</b>",
+"options": [
+"보류 중인",
+"진행 중인",
+"완료된",
+"대기 통화 중만"
+],
+"a": 0,
+"why": "프로젝트가 잠시 멈춘 상태를 뜻합니다."
+},
+{
+"tag": "이메일",
+"type": "choice",
+"q": "<b>bear with me</b>",
+"options": [
+"조금만 기다려 주세요",
+"저를 참아주세요라는 항의",
+"함께 가주세요",
+"동의해 주세요"
+],
+"a": 0,
+"why": "발표 중 준비에 시간이 걸릴 때 쓰는 정중한 표현입니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>deprecated</b>",
+"options": [
+"더 이상 권장되지 않는, 폐기 예정인",
+"가치가 떨어진",
+"보안이 취약한",
+"비공개된"
+],
+"a": 0,
+"why": "아직 동작하지만 앞으로 제거될 예정이니 쓰지 말라는 표시입니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>legacy</b> (시스템 맥락)",
+"options": [
+"오래되어 유지보수가 부담스러운 기존 시스템",
+"유산 상속",
+"최신 기술",
+"표준 규격"
+],
+"a": 0,
+"why": "원래는 유산이라는 좋은 뜻이지만 개발에서는 부담스러운 구형 시스템을 가리켜요."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>edge case</b>",
+"options": [
+"드물게 발생하는 경계 상황",
+"가장자리 사례집",
+"최우선 사례",
+"일반적인 경우"
+],
+"a": 0,
+"why": "버그는 대부분 여기서 나옵니다. corner case라고도 해요."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>graceful degradation</b>",
+"options": [
+"일부가 고장나도 전체가 완전히 멈추지 않고 축소 동작",
+"점진적 성능 저하 문제",
+"우아한 종료",
+"단계적 폐기"
+],
+"a": 0,
+"why": "기능이 줄더라도 서비스는 유지된다는 설계 원칙입니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>idempotent</b>",
+"options": [
+"여러 번 실행해도 결과가 같은",
+"한 번만 실행되는",
+"무력한",
+"비효율적인"
+],
+"a": 0,
+"why": "HTTP의 PUT과 DELETE가 가진 성질입니다. 재시도 설계의 핵심 개념이에요."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>throughput</b>",
+"options": [
+"단위 시간당 처리량",
+"지연 시간",
+"대역폭 한계",
+"응답 속도"
+],
+"a": 0,
+"why": "latency(지연)와 함께 성능을 설명하는 두 축입니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>rollback</b>",
+"options": [
+"이전 상태로 되돌리기",
+"다시 배포하기",
+"점진적 출시",
+"재시작"
+],
+"a": 0,
+"why": "배포에 문제가 생겼을 때 직전 버전으로 복구하는 것입니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>scalable</b>",
+"options": [
+"규모 확장이 용이한",
+"측정 가능한",
+"비늘 모양의",
+"축소 가능한"
+],
+"a": 0,
+"why": "트래픽이 늘어도 대응할 수 있는 구조를 뜻합니다."
+},
+{
+"tag": "기술",
+"type": "choice",
+"q": "<b>boilerplate</b>",
+"options": [
+"반복적으로 쓰이는 정형화된 코드나 문구",
+"끓는점",
+"보일러 설비",
+"핵심 로직"
+],
+"a": 0,
+"why": "매번 똑같이 작성해야 하는 상용구를 뜻합니다."
+}
+];
+const KEY = 'quiz.word';
+const SIZE = 20;
+
+/* 저장소 — 로컬스토리지가 막힌 환경에서는 메모리로 자동 대체 */
+const mem = {};
+const store = {
+  ok: (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; } })(),
+  read() {
+    try {
+      const raw = this.ok ? localStorage.getItem(KEY) : mem[KEY];
+      const d = raw ? JSON.parse(raw) : null;
+      if (d && Array.isArray(d.seen) && typeof d.cycle === 'number') return d;
+    } catch (e) {}
+    return { seen: [], cycle: 1 };
+  },
+  write(d) {
+    try {
+      const raw = JSON.stringify(d);
+      if (this.ok) localStorage.setItem(KEY, raw); else mem[KEY] = raw;
+    } catch (e) {}
+  },
+  clear() {
+    try { if (this.ok) localStorage.removeItem(KEY); else delete mem[KEY]; } catch (e) {}
+  }
+};
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), foot = $('foot'), nextBtn = $('next'), hint = $('hint');
+const toTop = () => { try { window.scrollTo(0, 0); } catch (e) {} };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let deck = [], idx = 0, score = 0, streak = 0, best = 0, misses = [], locked = false, cur = null;
+let state = store.read(), lastOfCycle = false, startedCycle = 1;
+
+/* 이번 세션에 낼 문제 뽑기 — 한 바퀴 안에서는 중복 없이 */
+function draw() {
+  state = store.read();
+  let seen = state.seen.filter(i => i >= 0 && i < BANK.length);
+  let remain = BANK.map((_, i) => i).filter(i => seen.indexOf(i) === -1);
+
+  if (remain.length === 0) {
+    state = { seen: [], cycle: state.cycle + 1 };
+    store.write(state);
+    seen = [];
+    remain = BANK.map((_, i) => i);
+  }
+  startedCycle = state.cycle;
+  const picked = shuffle(remain).slice(0, SIZE);
+  lastOfCycle = remain.length <= SIZE;
+  return picked;
+}
+
+function build(indices) {
+  deck = indices.map(i => {
+    const q = BANK[i];
+    if (q.type === 'ox') return { ...q, _i: i };
+    const order = shuffle(q.options.map((t, n) => [t, n]));
+    return { ...q, _i: i, options: order.map(o => o[0]), a: order.findIndex(o => o[1] === q.a) };
+  });
+  idx = 0; score = 0; streak = 0; best = 0; misses = [];
+  foot.style.display = '';
+  $('stations').innerHTML = deck.map(() => '<div class="st"><i></i><b></b></div>').join('');
+  render();
+}
+
+function paint() {
+  const sts = $('stations').children;
+  for (let i = 0; i < sts.length; i++) sts[i].classList.toggle('now', i === idx && !locked);
+  const now = sts[idx];
+  if (now && now.scrollIntoView) { try { now.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (e) {} }
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function render() {
+  locked = false;
+  cur = deck[idx];
+  const ox = cur.type === 'ox';
+  const labels = ox ? ['O', 'X'] : cur.options;
+
+  stage.innerHTML =
+    '<div class="tag">' + (cur.tag || '영어 단어') + '</div>' +
+    '<h2 class="q">' + cur.q + '</h2>' +
+    '<div class="choices ' + (ox ? 'ox' : '') + '" id="ch"></div>' +
+    '<div id="vd"></div>';
+
+  const ch = $('ch');
+  labels.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button';
+    b.innerHTML = ox ? t : '<kbd>' + (i + 1) + '</kbd><span>' + t + '</span>';
+    b.onclick = () => answer(i);
+    ch.appendChild(b);
+  });
+
+  nextBtn.disabled = true;
+  nextBtn.textContent = '답을 고르세요';
+  hint.textContent = ox ? 'O / X 키로 선택, Enter로 다음' : '1~' + labels.length + ' 숫자키로 선택, Enter로 다음';
+  paint();
+  toTop();
+}
+
+function answer(pick) {
+  if (locked) return;
+  locked = true;
+
+  const correct = cur.type === 'ox' ? (cur.a === true ? 0 : 1) : cur.a;
+  const hit = pick === correct;
+  const opts = $('ch').children;
+
+  for (let i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === correct) opts[i].classList.add('right');
+    else if (i === pick) opts[i].classList.add('wrong');
+    else opts[i].classList.add('dim');
+  }
+
+  const st = $('stations').children[idx];
+  st.classList.remove('now');
+  st.classList.add(hit ? 'pass' : 'fail');
+
+  if (hit) { score++; streak++; best = Math.max(best, streak); }
+  else {
+    streak = 0;
+    misses.push({ q: cur.q, right: cur.type === 'ox' ? (cur.a ? 'O' : 'X') : cur.options[correct], why: cur.why, i: cur._i });
+  }
+
+  /* 푼 즉시 기록 — 중간에 창을 닫아도 진행이 남도록 */
+  if (cur._i !== undefined) {
+    const s = store.read();
+    if (s.cycle === startedCycle && s.seen.indexOf(cur._i) === -1) {
+      s.seen.push(cur._i);
+      store.write(s);
+    }
+  }
+
+  $('vd').innerHTML =
+    '<div class="verdict ' + (hit ? 'ok' : 'no') + '">' +
+    '<h3>' + (hit ? '맞았어요' : '아쉬워요') + '</h3><p>' + cur.why + '</p></div>';
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = idx === deck.length - 1 ? '결과 보기' : '다음 문제';
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function advance() {
+  if (nextBtn.disabled) return;
+  if (idx === deck.length - 1) return finish();
+  idx++;
+  render();
+}
+
+function finish() {
+  foot.style.display = 'none';
+  const pct = Math.round(score / deck.length * 100);
+  const s = store.read();
+  const done = s.cycle === startedCycle ? s.seen.length : BANK.length;
+  const pctAll = Math.round(done / BANK.length * 100);
+
+  stage.innerHTML =
+    '<div class="end">' +
+    '<div class="score"><b>' + pct + '</b><span>점 · ' + score + '/' + deck.length + ' · 최고 연속 ' + best + '</span></div>' +
+    '<p>' + (pct === 100 ? '이번 구간은 만점이에요.' : pct >= 80 ? '거의 다 맞혔어요.' : pct >= 50 ? '절반은 잡았어요.' : '오답 노트부터 읽어보세요.') + '</p>' +
+
+    '<div class="cycle">' +
+    '<div class="cycle-top"><b>' + startedCycle + '바퀴째</b><span>' + done + ' / ' + BANK.length + '문항 · ' + pctAll + '%</span></div>' +
+    '<div class="bar"><i style="width:' + pctAll + '%"></i></div>' +
+    '<small>' + (lastOfCycle ? '이번 바퀴를 다 돌았어요. 다음 회차부터 ' + (startedCycle + 1) + '바퀴가 시작됩니다.' :
+      '다음 회차에는 아직 안 나온 ' + (BANK.length - done) + '문항 중에서 출제돼요.') +
+    (store.ok ? '' : ' (이 환경에서는 저장이 안 되니 파일을 내려받아 열면 진행이 유지됩니다)') + '</small></div>' +
+
+    (misses.length ? '<h2>오답 노트 ' + misses.length + '</h2>' +
+      misses.map(m => '<div class="miss"><h4>' + m.q + '</h4><p><b>' + m.right + '</b> — ' + m.why + '</p></div>').join('') : '') +
+
+    '<div class="actions">' +
+    (misses.length ? '<button class="next" id="again">틀린 ' + misses.length + '문제만 다시</button>' : '') +
+    '<button class="ghost" id="more">다음 ' + Math.min(SIZE, Math.max(BANK.length - done, SIZE)) + '문항 이어서</button>' +
+    '<a class="ghost linkbtn" href="index.html">다른 노선 고르기</a>' +
+    '<button class="ghost quiet" id="reset">진행 기록 초기화</button>' +
+    '</div></div>';
+
+  if ($('again')) $('again').onclick = () => build(misses.map(m => m.i));
+  $('more').onclick = () => build(draw());
+  $('reset').onclick = openAdmin;
+  toTop();
+}
+
+nextBtn.onclick = advance;
+
+/* 관리자 초기화 — 비밀번호는 오조작 방지용이지 보안 장치가 아님 */
+const PIN = '1111';
+const mask = $('mask'), pin = $('pin'), warn = $('warn');
+let modalOpen = false;
+
+function openAdmin() {
+  modalOpen = true;
+  mask.hidden = false;
+  pin.value = '';
+  warn.textContent = '';
+  pin.classList.remove('shake');
+  setTimeout(() => pin.focus(), 30);
+}
+
+function closeAdmin() {
+  modalOpen = false;
+  mask.hidden = true;
+}
+
+function tryReset() {
+  if (pin.value !== PIN) {
+    warn.textContent = '비밀번호가 맞지 않습니다.';
+    pin.classList.remove('shake');
+    void pin.offsetWidth;
+    pin.classList.add('shake');
+    pin.value = '';
+    pin.focus();
+    return;
+  }
+  store.clear();
+  state = { seen: [], cycle: 1 };
+  closeAdmin();
+  build(draw());
+}
+
+$('admin').onclick = openAdmin;
+$('cancel').onclick = closeAdmin;
+$('confirm').onclick = tryReset;
+mask.onclick = e => { if (e.target === mask) closeAdmin(); };
+pin.onkeydown = e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); tryReset(); }
+  if (e.key === 'Escape') closeAdmin();
+};
+
+document.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeAdmin(); return; }
+  if (e.key === 'Enter' || e.key === ' ') { if (!nextBtn.disabled && foot.style.display !== 'none') { e.preventDefault(); advance(); } return; }
+  if (locked || !$('ch')) return;
+  const ch = $('ch').children;
+  if (cur.type === 'ox') {
+    if (e.key === 'o' || e.key === 'O' || e.key === 'ㅐ') answer(0);
+    if (e.key === 'x' || e.key === 'X' || e.key === 'ㅌ') answer(1);
+  } else {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= ch.length) answer(n - 1);
+  }
+});
+
+build(draw());
+</script>
+</body>
+</html>

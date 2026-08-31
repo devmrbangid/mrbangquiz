@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4E63B8">
+<title>업무용어 · 출퇴근 노선</title>
+<style>
+:root{
+  --line:#4E63B8;
+  --ink:#0E1116;
+  --ink-2:#161B22;
+  --ink-3:#1E252F;
+  --paper:#F2F4F7;
+  --mute:#8B95A5;
+  --ok:#39C07C;
+  --no:#F2584D;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--paper);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  font-size:16px;line-height:1.6;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+code,.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+.rail{position:sticky;top:0;z-index:20;background:linear-gradient(var(--ink) 78%,rgba(14,17,22,0));padding:calc(14px + env(safe-area-inset-top)) 18px 16px}
+.rail-top{display:flex;align-items:center;gap:10px}
+.badge{width:30px;height:30px;flex:none;border-radius:50%;background:var(--line);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.subject{font-size:15px;font-weight:700;letter-spacing:-.02em;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subject small{display:block;font-size:11px;font-weight:500;color:var(--mute);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.counter{margin-left:auto;text-align:right;flex:none;padding-left:8px}
+.counter b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.counter span{font-size:11px;color:var(--mute);display:block;margin-top:-2px}
+
+.track{margin-top:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.stations{display:flex;align-items:center;gap:0;height:22px;padding-right:20px}
+.st{flex:none;display:flex;align-items:center}
+.st i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3);border:2px solid var(--ink-3);transition:background .2s,border-color .2s,transform .2s}
+.st b{width:14px;height:2px;background:var(--ink-3);flex:none}
+.st.pass i{background:var(--line);border-color:var(--line)}
+.st.pass b{background:var(--line)}
+.st.fail i{background:transparent;border-color:var(--no)}
+.st.fail b{background:var(--ink-3)}
+.st.now i{transform:scale(1.7);background:var(--paper);border-color:var(--paper)}
+
+main{flex:1;padding:6px 18px 20px;max-width:640px;width:100%;margin:0 auto}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--line);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);border-radius:999px;padding:3px 10px;margin-bottom:14px}
+.q{font-size:23px;line-height:1.45;font-weight:800;letter-spacing:-.035em;margin:0 0 22px;word-break:keep-all}
+.q code{font-size:.92em;font-weight:700;background:var(--ink-3);padding:2px 7px;border-radius:6px;letter-spacing:0}
+
+.choices{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:58px;padding:15px 16px;background:var(--ink-2);border:1.5px solid var(--ink-3);border-radius:var(--r);color:var(--paper);font:inherit;font-size:15.5px;line-height:1.45;text-align:left;letter-spacing:-.02em;word-break:keep-all;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.opt:active{transform:scale(.985)}
+.opt:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.opt kbd{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;background:var(--ink-3);color:var(--mute);display:grid;place-items:center;font:700 12px/1 ui-monospace,monospace}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--ink-2))}
+.opt.right kbd{background:var(--ok);color:#06110B}
+.opt.wrong{border-color:var(--no);background:color-mix(in srgb,var(--no) 13%,var(--ink-2))}
+.opt.wrong kbd{background:var(--no);color:#2A0906}
+.opt.dim{opacity:.4}
+.opt[disabled]{cursor:default}
+
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.ox .opt{justify-content:center;align-items:center;min-height:104px;font-size:38px;font-weight:800;padding:0}
+.ox .opt kbd{display:none}
+
+.verdict{margin-top:18px;border-radius:var(--r);padding:16px 17px;background:var(--ink-2);border-left:4px solid var(--mute)}
+.verdict.ok{border-left-color:var(--ok)}
+.verdict.no{border-left-color:var(--no)}
+.verdict h3{margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.verdict.ok h3{color:var(--ok)}
+.verdict.no h3{color:var(--no)}
+.verdict p{margin:0;font-size:14.5px;line-height:1.65;color:#C9D2DE;word-break:keep-all}
+.verdict code{background:var(--ink-3);padding:1px 6px;border-radius:5px;font-size:.92em}
+
+footer{position:sticky;bottom:0;padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(14,17,22,0),var(--ink) 30%);max-width:640px;width:100%;margin:0 auto}
+.next{width:100%;min-height:56px;border:0;border-radius:var(--r);background:var(--line);color:#fff;font:800 17px/1 inherit;letter-spacing:-.02em;cursor:pointer;transition:opacity .15s,transform .1s}
+.next:active{transform:scale(.99)}
+.next:disabled{opacity:.22;cursor:default}
+.next:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.hint{text-align:center;font-size:11.5px;color:var(--mute);margin-top:9px;letter-spacing:-.01em}
+
+.end{padding:10px 0 0}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.score b{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.score span{font-size:17px;color:var(--mute);font-weight:600}
+.end>p{color:var(--mute);font-size:14px;margin:0 0 22px}
+
+.cycle{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:26px}
+.cycle-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.cycle-top b{font-size:13.5px;font-weight:700;letter-spacing:-.02em}
+.cycle-top span{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--ink-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--line);border-radius:3px;transition:width .5s}
+.cycle small{display:block;margin-top:9px;font-size:11.5px;color:var(--mute);line-height:1.5}
+
+.end h2{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--mute);margin:0 0 12px}
+.miss{background:var(--ink-2);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;border-left:4px solid var(--no)}
+.miss h4{margin:0 0 7px;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.45;word-break:keep-all}
+.miss p{margin:0;font-size:13.5px;color:#B4BEC9;line-height:1.6;word-break:keep-all}
+.miss p b{color:var(--ok);font-weight:700}
+.actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.ghost{width:100%;min-height:52px;border-radius:var(--r);background:transparent;border:1.5px solid var(--ink-3);color:var(--paper);font:700 15.5px/1 inherit;cursor:pointer}
+.ghost:active{background:var(--ink-2)}
+.ghost:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.ghost.quiet{color:var(--mute);border-color:transparent;min-height:44px;font-size:13.5px;font-weight:600}
+.ghost.linkbtn{display:grid;place-items:center;text-decoration:none;line-height:1}
+
+/* 관리자 초기화 */
+.admin,.home{
+  width:30px;height:30px;flex:none;
+  border:1.5px solid var(--ink-3);border-radius:9px;
+  background:transparent;color:var(--mute);
+  display:grid;place-items:center;cursor:pointer;padding:0;
+  text-decoration:none;
+}
+.home{margin-left:8px}
+.admin{margin-left:6px}
+.admin:active,.home:active{background:var(--ink-2)}
+.admin:focus-visible,.home:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+.admin svg,.home svg{width:15px;height:15px;display:block}
+
+.mask{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(6,8,11,.72);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:22px;
+}
+.mask[hidden]{display:none}
+.modal{
+  width:100%;max-width:340px;
+  background:var(--ink-2);border:1px solid var(--ink-3);border-radius:18px;
+  padding:22px 20px 18px;
+}
+.modal h3{margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em}
+.modal p{margin:0 0 16px;font-size:13.5px;color:var(--mute);line-height:1.55;word-break:keep-all}
+.pin{
+  width:100%;height:54px;margin-bottom:10px;
+  background:var(--ink);border:1.5px solid var(--ink-3);border-radius:var(--r);
+  color:var(--paper);font:800 24px/1 ui-monospace,monospace;
+  text-align:center;letter-spacing:.5em;text-indent:.5em;
+}
+.pin:focus{outline:none;border-color:var(--line)}
+.pin.shake{border-color:var(--no);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.warn{min-height:18px;margin:0 0 12px;font-size:12.5px;color:var(--no);text-align:center}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;min-height:48px;border-radius:var(--r);font:700 15px/1 inherit;cursor:pointer;border:0}
+.btn-no{background:transparent;border:1.5px solid var(--ink-3);color:var(--paper)}
+.btn-yes{background:var(--no);color:#fff;font-weight:800}
+.modal-btns button:focus-visible{outline:2.5px solid var(--paper);outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.q{font-size:26px}}
+</style>
+</head>
+<body>
+
+<header class="rail">
+  <div class="rail-top">
+    <div class="badge">11</div>
+    <div class="subject">업무용어<small>회사에서 매일 쓰는 말</small></div>
+    <div class="counter"><b id="cnt">0/0</b><span id="streak">연속 0</span></div>
+    <a class="home" href="index.html" aria-label="노선 목록으로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.7V20h14V9.7"/>
+      </svg>
+    </a>
+    <button class="admin" id="admin" type="button" aria-label="진행 기록 초기화">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+  <div class="track"><div class="stations" id="stations"></div></div>
+</header>
+
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <h3 id="mt">진행 기록 초기화</h3>
+    <p>지금까지 푼 기록을 지우고 100문항 전체에서 다시 무작위로 출제합니다.</p>
+    <input class="pin" id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
+    <p class="warn" id="warn"></p>
+    <div class="modal-btns">
+      <button class="btn-no" id="cancel" type="button">취소</button>
+      <button class="btn-yes" id="confirm" type="button">초기화</button>
+    </div>
+  </div>
+</div>
+
+<main id="stage"><noscript><div style="background:#161B22;border-left:4px solid #F2584D;border-radius:14px;padding:16px 17px;margin-top:10px"><h3 style="margin:0 0 6px;font-size:14px;color:#F2584D">자바스크립트가 실행되지 않았어요</h3><p style="margin:0;font-size:14px;color:#C9D2DE;line-height:1.6;word-break:keep-all">아이폰 파일 앱의 미리보기(Quick Look)로 열면 이 화면이 나옵니다. 파일에는 문제가 없으니, 실제 브라우저로 열거나 웹에 올려서 접속해 주세요.</p></div></noscript></main>
+
+<footer id="foot">
+  <button class="next" id="next" disabled>답을 고르세요</button>
+  <div class="hint" id="hint">숫자키·O·X로 선택, Enter로 다음</div>
+</footer>
+
+<script>
+const BANK = [
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>아젠다</b>(Agenda)란?",
+"options": [
+"회의에서 다룰 안건과 순서",
+"회의록",
+"참석자 명단",
+"결정 사항"
+],
+"a": 0,
+"why": "미리 공유해야 참석자가 준비할 수 있습니다. 아젠다 없는 회의가 길어지는 이유예요."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>MOM</b>(Minutes of Meeting)이란?",
+"options": [
+"회의록",
+"회의 시간",
+"회의 목적",
+"회의 참석자"
+],
+"a": 0,
+"why": "결정 사항, 담당자, 기한을 명확히 남기는 게 핵심입니다."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>액션 아이템</b>(Action Item)이란?",
+"options": [
+"회의 후 누가 무엇을 언제까지 할지 정한 실행 항목",
+"회의 안건",
+"논의 내용",
+"참고 자료"
+],
+"a": 0,
+"why": "담당자와 기한이 없으면 액션 아이템이 아니라 그냥 희망사항입니다."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>킥오프</b>(Kick-off) 미팅의 목적은?",
+"options": [
+"프로젝트 시작 시 목표와 역할을 공유하고 정렬하는 것",
+"중간 점검",
+"최종 보고",
+"성과 평가"
+],
+"a": 0,
+"why": "축구의 경기 시작에서 온 표현입니다."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>브레인스토밍</b>의 기본 원칙은?",
+"options": [
+"비판을 미루고 자유롭게 많은 아이디어를 내는 것",
+"최고의 아이디어만 말하기",
+"순서대로 발표하기",
+"즉시 평가하기"
+],
+"a": 0,
+"why": "양이 질을 낳는다는 전제입니다. 평가는 나중 단계에서 해요."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>워크숍</b>이 일반 회의와 다른 점은?",
+"options": [
+"참가자가 직접 작업하며 결과물을 만들어내는 형태",
+"더 길다",
+"외부에서 한다",
+"발표만 한다"
+],
+"a": 0,
+"why": "듣기만 하는 자리가 아니라 함께 만드는 자리입니다."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>디브리핑</b>(Debriefing)이란?",
+"options": [
+"일이 끝난 뒤 과정을 되짚어 배운 점을 공유하는 것",
+"사전 설명",
+"업무 지시",
+"성과 발표"
+],
+"a": 0,
+"why": "사전 설명은 브리핑, 사후 정리는 디브리핑입니다."
+},
+{
+"tag": "회의",
+"type": "choice",
+"q": "<b>싱크</b>(Sync) 미팅이란?",
+"options": [
+"진행 상황을 서로 맞추는 짧은 정례 회의",
+"동기화 작업",
+"최종 결정 회의",
+"교육 세션"
+],
+"a": 0,
+"why": "synchronize에서 온 말입니다. 짧고 자주 하는 게 원칙이에요."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>R&R</b>이란?",
+"options": [
+"역할과 책임 (Role and Responsibility)",
+"위험과 보상",
+"연구개발",
+"검토와 승인"
+],
+"a": 0,
+"why": "프로젝트 초기에 R&R이 불명확하면 나중에 반드시 충돌이 생깁니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>마일스톤</b>(Milestone)이란?",
+"options": [
+"프로젝트의 주요 중간 점검 시점",
+"최종 마감일",
+"작업 단위",
+"산출물"
+],
+"a": 0,
+"why": "이정표라는 뜻입니다. 진척도를 확인하는 기준점이에요."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>WBS</b>란?",
+"options": [
+"업무를 작은 단위로 계층적으로 쪼갠 작업 분해 구조",
+"웹 기반 시스템",
+"주간 업무 보고",
+"작업 일정표"
+],
+"a": 0,
+"why": "Work Breakdown Structure입니다. 일정과 비용 산정의 기초가 돼요."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>간트 차트</b>가 보여주는 것은?",
+"options": [
+"작업별 일정과 기간을 막대로 표현한 일정표",
+"비용 구조",
+"조직도",
+"성과 지표"
+],
+"a": 0,
+"why": "작업 간 선후 관계와 겹침을 한눈에 볼 수 있습니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>크리티컬 패스</b>(임계경로)란?",
+"options": [
+"프로젝트 전체 기간을 결정하는 가장 긴 작업 경로",
+"가장 위험한 작업",
+"가장 비싼 작업",
+"가장 짧은 경로"
+],
+"a": 0,
+"why": "여기가 하루 밀리면 프로젝트 전체가 하루 밀립니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>스코프</b>(Scope)란?",
+"options": [
+"프로젝트에서 다룰 범위",
+"일정",
+"예산",
+"품질 기준"
+],
+"a": 0,
+"why": "무엇을 하지 않을지도 명확히 적어두는 게 좋습니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>스코프 크립</b>이란?",
+"options": [
+"요구사항이 통제 없이 조금씩 늘어나는 현상",
+"범위가 줄어드는 것",
+"일정이 지연되는 것",
+"예산이 초과되는 것"
+],
+"a": 0,
+"why": "작은 추가 요청이 쌓여 프로젝트를 망가뜨립니다. 변경 관리 절차가 필요한 이유예요."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>리드타임</b>이란?",
+"options": [
+"요청부터 완료까지 걸리는 총 시간",
+"실제 작업 시간",
+"대기 시간",
+"준비 시간"
+],
+"a": 0,
+"why": "실제 작업 시간(사이클 타임)보다 대기 시간이 더 긴 경우가 많습니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>버퍼</b>(Buffer)를 두는 이유는?",
+"options": [
+"예상치 못한 지연에 대비한 여유 시간을 확보하기 위해",
+"일을 미루기 위해",
+"비용을 늘리기 위해",
+"인원을 늘리기 위해"
+],
+"a": 0,
+"why": "버퍼 없는 계획은 반드시 지연됩니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>PoC</b>(Proof of Concept)란?",
+"options": [
+"아이디어가 실현 가능한지 작게 검증해보는 것",
+"최종 제품",
+"계약서",
+"기획서"
+],
+"a": 0,
+"why": "본격 투자 전에 기술적 타당성을 확인하는 단계입니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>파일럿</b>(Pilot)이란?",
+"options": [
+"소규모로 먼저 적용해보고 확대 여부를 판단하는 것",
+"최종 배포",
+"시험 설계",
+"조종 업무"
+],
+"a": 0,
+"why": "PoC보다 실제 환경에 가깝게 운영해봅니다."
+},
+{
+"tag": "프로젝트",
+"type": "choice",
+"q": "<b>롤아웃</b>(Roll-out)이란?",
+"options": [
+"신규 서비스나 제도를 실제로 확산 적용하는 것",
+"철수하는 것",
+"되돌리는 것",
+"시험하는 것"
+],
+"a": 0,
+"why": "단계적으로 진행하는 것을 단계적 롤아웃이라고 합니다."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>스프린트</b>란?",
+"options": [
+"1~4주 단위로 정해진 목표를 완수하는 개발 주기",
+"전력 질주 업무",
+"긴급 대응",
+"야근"
+],
+"a": 0,
+"why": "스크럼의 핵심 단위입니다. 기간은 고정하고 범위를 조절해요."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>데일리 스탠드업</b>의 목적은?",
+"options": [
+"어제 한 일, 오늘 할 일, 장애물을 짧게 공유",
+"업무 보고와 평가",
+"일정 조율",
+"문제 해결 회의"
+],
+"a": 0,
+"why": "서서 하는 이유는 짧게 끝내기 위해서입니다. 보통 15분을 넘기지 않아요."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>백로그</b>란?",
+"options": [
+"앞으로 해야 할 일을 우선순위대로 모아둔 목록",
+"완료된 작업 기록",
+"밀린 야근",
+"이전 버전"
+],
+"a": 0,
+"why": "제품 백로그에서 이번 스프린트에 할 일을 뽑은 것이 스프린트 백로그입니다."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>회고</b>(Retrospective)의 목적은?",
+"options": [
+"잘한 점과 개선할 점을 찾아 다음에 반영하는 것",
+"성과를 평가하는 것",
+"책임자를 찾는 것",
+"보고하는 것"
+],
+"a": 0,
+"why": "사람을 탓하지 않고 프로세스를 고치는 자리여야 효과가 있습니다."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>MVP</b>(Minimum Viable Product)란?",
+"options": [
+"핵심 가치를 검증할 수 있는 최소한의 제품",
+"최고 성능 제품",
+"최소 비용 제품",
+"완성된 제품"
+],
+"a": 0,
+"why": "빨리 내놓고 시장 반응을 확인하는 게 목적입니다. 대충 만든 제품과는 다릅니다."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>스크럼 마스터</b>의 역할은?",
+"options": [
+"팀이 방해 없이 일하도록 돕고 프로세스를 촉진하는 것",
+"팀장으로서 지시",
+"제품 방향 결정",
+"일정 관리만"
+],
+"a": 0,
+"why": "관리자가 아니라 조력자입니다. 제품 방향은 프로덕트 오너가 정해요."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>벨로시티</b>(Velocity)란?",
+"options": [
+"팀이 스프린트당 처리할 수 있는 작업량의 추정치",
+"작업 속도 평가 점수",
+"개인 성과 지표",
+"마감 압박"
+],
+"a": 0,
+"why": "계획 수립용 참고치입니다. 팀 간 비교나 평가에 쓰면 왜곡이 생겨요."
+},
+{
+"tag": "애자일",
+"type": "choice",
+"q": "<b>워터폴</b> 방식의 특징은?",
+"options": [
+"기획·설계·개발·테스트를 순차적으로 진행",
+"반복적으로 개발",
+"동시에 진행",
+"계속 변경"
+],
+"a": 0,
+"why": "요구사항이 명확하고 변경이 적은 프로젝트에 적합합니다."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>KPI</b>란?",
+"options": [
+"목표 달성 정도를 측정하는 핵심 성과 지표",
+"핵심 프로젝트 정보",
+"주요 성과 계획",
+"지식 처리 지표"
+],
+"a": 0,
+"why": "측정 가능해야 KPI입니다. '열심히 한다'는 KPI가 될 수 없어요."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>OKR</b>의 구성은?",
+"options": [
+"도전적인 목표(Objective)와 측정 가능한 핵심 결과(Key Results)",
+"목표와 계획",
+"조직과 역할",
+"운영과 결과"
+],
+"a": 0,
+"why": "KPI가 관리 지표라면 OKR은 도전적 목표 설정 방식에 가깝습니다."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>SMART</b> 목표 설정에서 M이 뜻하는 것은?",
+"options": [
+"측정 가능한 (Measurable)",
+"관리 가능한",
+"의미 있는",
+"최소한의"
+],
+"a": 0,
+"why": "구체적·측정가능·달성가능·관련성·기한이 있는 목표를 뜻합니다."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>ROI</b>란?",
+"options": [
+"투자 대비 수익률",
+"운영 지표",
+"위험도",
+"수익 규모"
+],
+"a": 0,
+"why": "투자 판단의 기본 지표입니다. 시간과 인력도 투자에 포함해서 계산해야 정확해요."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>벤치마킹</b>이란?",
+"options": [
+"우수 사례를 분석해 자사에 적용하는 것",
+"성능 측정만",
+"경쟁사 비판",
+"가격 비교"
+],
+"a": 0,
+"why": "단순 모방이 아니라 왜 잘 되는지 원리를 파악하는 게 핵심입니다."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>SWOT 분석</b>의 네 요소는?",
+"options": [
+"강점·약점·기회·위협",
+"전략·업무·조직·기술",
+"규모·시간·목표·팀",
+"속도·품질·비용·범위"
+],
+"a": 0,
+"why": "강점과 약점은 내부, 기회와 위협은 외부 요인입니다."
+},
+{
+"tag": "성과 관리",
+"type": "choice",
+"q": "<b>피드백</b>과 <b>피드포워드</b>의 차이는?",
+"options": [
+"피드백은 과거 행동에 대한 의견, 피드포워드는 앞으로의 개선 제안",
+"반대",
+"같은 것",
+"피드포워드가 과거 지향"
+],
+"a": 0,
+"why": "이미 지난 일을 지적하기보다 다음에 어떻게 하면 좋을지 말하는 게 더 효과적일 때가 많습니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>스테이크홀더</b>란?",
+"options": [
+"프로젝트에 이해관계가 있는 모든 관련자",
+"주주만",
+"고객만",
+"경영진만"
+],
+"a": 0,
+"why": "내부 부서, 고객, 협력사까지 포함합니다. 초기에 식별하는 게 중요해요."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>사일로</b>(Silo) 현상이란?",
+"options": [
+"부서 간 벽이 생겨 정보와 협업이 단절되는 것",
+"조직이 커지는 것",
+"업무가 늘어나는 것",
+"경쟁이 심해지는 것"
+],
+"a": 0,
+"why": "곡물 저장고에서 온 말입니다. 각자 칸막이 안에 갇힌 상태를 뜻해요."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>매트릭스 조직</b>의 특징은?",
+"options": [
+"기능 조직과 프로젝트 조직을 겹쳐 두 명의 상사에게 보고",
+"단일 보고 체계",
+"완전 수평 구조",
+"팀이 없는 구조"
+],
+"a": 0,
+"why": "자원 활용이 유연하지만 보고 라인이 복잡해 갈등이 생기기 쉽습니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>온보딩</b>이란?",
+"options": [
+"신규 입사자가 조직에 빠르게 적응하도록 돕는 과정",
+"퇴사 절차",
+"승진 심사",
+"교육 평가"
+],
+"a": 0,
+"why": "초기 경험이 정착률에 큰 영향을 줍니다. 반대는 오프보딩이에요."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>멘토링</b>과 <b>코칭</b>의 차이는?",
+"options": [
+"멘토링은 경험을 전수하고 코칭은 질문으로 스스로 답을 찾게 함",
+"반대",
+"같은 것",
+"코칭이 경험 전수"
+],
+"a": 0,
+"why": "코칭은 답을 주지 않는 것이 원칙입니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>1 on 1</b> 미팅의 목적은?",
+"options": [
+"구성원의 성장과 어려움을 개별적으로 다루는 정기 대화",
+"업무 지시",
+"성과 평가",
+"보고 회의"
+],
+"a": 0,
+"why": "상사가 말하는 자리가 아니라 구성원이 말하는 자리여야 효과가 있습니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>심리적 안전감</b>이란?",
+"options": [
+"실수나 반대 의견을 말해도 불이익이 없다고 느끼는 상태",
+"편안한 근무 환경",
+"고용 안정",
+"복지 제도"
+],
+"a": 0,
+"why": "구글의 연구에서 고성과 팀의 가장 중요한 요인으로 꼽혔습니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>번아웃</b>이란?",
+"options": [
+"지속적인 스트레스로 정서적·신체적으로 소진된 상태",
+"단순한 피로",
+"업무 실패",
+"이직 준비"
+],
+"a": 0,
+"why": "의욕 저하, 냉소, 효능감 저하가 특징입니다. 휴식만으로 회복되지 않는 경우도 많아요."
+},
+{
+"tag": "결재",
+"type": "choice",
+"q": "<b>기안</b>이란?",
+"options": [
+"안건을 작성해 결재를 올리는 것",
+"최종 승인",
+"검토 의견",
+"보고서 제출"
+],
+"a": 0,
+"why": "기안자가 문서를 작성하면 결재 라인을 따라 올라갑니다."
+},
+{
+"tag": "결재",
+"type": "choice",
+"q": "<b>전결</b>이란?",
+"options": [
+"위임받은 범위 안에서 최종 결재권자가 아닌 사람이 결재하는 것",
+"전체 결재",
+"사전 결재",
+"전자 결재"
+],
+"a": 0,
+"why": "모든 문서가 대표까지 올라가면 조직이 마비되므로 권한을 위임합니다."
+},
+{
+"tag": "결재",
+"type": "choice",
+"q": "<b>품의</b>란?",
+"options": [
+"지출이나 계약 등을 사전에 승인받기 위한 문서",
+"사후 보고",
+"계약서",
+"견적서"
+],
+"a": 0,
+"why": "돈을 쓰기 전에 올리는 것이 원칙입니다."
+},
+{
+"tag": "결재",
+"type": "choice",
+"q": "<b>반려</b>와 <b>보류</b>의 차이는?",
+"options": [
+"반려는 되돌려 보내는 것, 보류는 판단을 미루는 것",
+"반대",
+"같은 것",
+"보류가 거절"
+],
+"a": 0,
+"why": "반려되면 수정 후 다시 올려야 합니다."
+},
+{
+"tag": "결재",
+"type": "choice",
+"q": "<b>합의</b>(협조 결재)란?",
+"options": [
+"결재 라인 외 관련 부서의 동의를 받는 절차",
+"전원 찬성",
+"계약 합의",
+"회의 결론"
+],
+"a": 0,
+"why": "타 부서에 영향을 주는 안건에 필요합니다."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>NDA</b>란?",
+"options": [
+"비밀유지 계약",
+"독점 계약",
+"고용 계약",
+"위탁 계약"
+],
+"a": 0,
+"why": "협상 초기에 정보를 공유하기 전 체결합니다."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>MOU</b>의 특징은?",
+"options": [
+"협력 의사를 확인하는 문서로 법적 구속력이 약한 경우가 많음",
+"강제력이 강한 계약",
+"비밀 유지 약정",
+"고용 계약"
+],
+"a": 0,
+"why": "본계약 전 단계로 쓰입니다. 내용에 따라 구속력이 생길 수도 있어요."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>RFP</b>란?",
+"options": [
+"발주처가 요구사항을 정리해 제안을 요청하는 문서",
+"견적 요청",
+"계약서",
+"입찰 결과"
+],
+"a": 0,
+"why": "Request for Proposal입니다. 단순 가격만 묻는 것은 RFQ예요."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>SLA</b>란?",
+"options": [
+"제공할 서비스 수준을 약속하고 미달 시 책임을 정한 계약",
+"보안 계약",
+"라이선스 계약",
+"고용 계약"
+],
+"a": 0,
+"why": "가용률 99.9% 같은 수치를 명시합니다."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>SOW</b>(Statement of Work)란?",
+"options": [
+"수행할 업무 범위와 산출물을 구체적으로 정의한 문서",
+"작업 순서",
+"안전 수칙",
+"표준 운영 절차"
+],
+"a": 0,
+"why": "분쟁이 생겼을 때 기준이 되는 문서입니다."
+},
+{
+"tag": "계약",
+"type": "choice",
+"q": "<b>SOP</b>란?",
+"options": [
+"표준 운영 절차",
+"서비스 운영 계획",
+"작업 순서표",
+"특별 운영 정책"
+],
+"a": 0,
+"why": "누가 하더라도 같은 품질이 나오도록 절차를 문서화한 것입니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>ASAP</b>",
+"options": [
+"가능한 한 빨리",
+"승인 후 진행",
+"추후 협의",
+"일정대로"
+],
+"a": 0,
+"why": "남용하면 우선순위 구분이 사라지니 실제 기한을 적는 게 더 좋습니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>FYI</b>",
+"options": [
+"참고로 알려드립니다",
+"즉시 회신 바랍니다",
+"확인 후 승인",
+"추가 요청"
+],
+"a": 0,
+"why": "조치가 필요 없고 정보 공유 목적일 때 씁니다. 조치가 필요하면 FYA를 써요."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>TBD</b>",
+"options": [
+"아직 정해지지 않음",
+"오늘까지",
+"확정됨",
+"검토 중단"
+],
+"a": 0,
+"why": "To Be Determined입니다. 문서에 남겨두고 나중에 채워요."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>EOD</b>",
+"options": [
+"오늘 업무 종료 시점까지",
+"한 주의 끝",
+"월말",
+"즉시"
+],
+"a": 0,
+"why": "End of Day입니다. 주 단위는 EOW, 월 단위는 EOM이에요."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>OOO</b>",
+"options": [
+"부재중 (Out of Office)",
+"업무 종료",
+"외부 발주",
+"초과 근무"
+],
+"a": 0,
+"why": "휴가나 외근으로 자리를 비울 때 표시합니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>WFH</b>",
+"options": [
+"재택근무",
+"주 40시간 근무",
+"유연근무",
+"현장 근무"
+],
+"a": 0,
+"why": "Work From Home입니다. 사무실 근무는 WFO예요."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>QA</b>와 <b>QC</b>의 차이는?",
+"options": [
+"QA는 프로세스로 품질을 보장, QC는 결과물을 검사",
+"반대",
+"같은 것",
+"QC가 프로세스 관리"
+],
+"a": 0,
+"why": "QA는 예방, QC는 검출에 가깝습니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>B2B</b>와 <b>B2C</b>의 차이는?",
+"options": [
+"B2B는 기업 대상, B2C는 개인 소비자 대상",
+"반대",
+"같은 것",
+"B2C가 기업 대상"
+],
+"a": 0,
+"why": "기업 간 거래는 의사결정 과정이 길고 관련자가 많다는 특징이 있습니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>CRM</b>이란?",
+"options": [
+"고객 관계 관리",
+"비용 위험 관리",
+"콘텐츠 자원 관리",
+"계약 기록 관리"
+],
+"a": 0,
+"why": "고객 정보를 축적해 관계를 관리하는 활동과 그 시스템을 뜻합니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>ERP</b>란?",
+"options": [
+"재무·인사·생산 등 전사 자원을 통합 관리하는 시스템",
+"비상 대응 계획",
+"외부 자원 조달",
+"전자 결재 시스템"
+],
+"a": 0,
+"why": "부서별로 흩어진 데이터를 하나로 묶는 게 목적입니다."
+},
+{
+"tag": "약어",
+"type": "choice",
+"q": "<b>SI</b>와 <b>SM</b>의 차이는?",
+"options": [
+"SI는 시스템 구축, SM은 구축 후 유지보수",
+"반대",
+"같은 것",
+"SM이 신규 개발"
+],
+"a": 0,
+"why": "System Integration과 System Management입니다."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>두괄식</b> 보고란?",
+"options": [
+"결론을 먼저 말하고 근거를 뒤에 설명하는 방식",
+"배경부터 설명",
+"시간순 서술",
+"질문으로 시작"
+],
+"a": 0,
+"why": "바쁜 의사결정자에게는 결론이 먼저 필요합니다."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>이슈</b>와 <b>리스크</b>의 차이는?",
+"options": [
+"이슈는 이미 발생한 문제, 리스크는 발생 가능성이 있는 위험",
+"반대",
+"같은 것",
+"리스크가 발생한 문제"
+],
+"a": 0,
+"why": "리스크는 사전 대비, 이슈는 즉시 대응 대상입니다."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>에스컬레이션</b>이란?",
+"options": [
+"자기 선에서 해결이 어려운 사안을 상위 단계로 올리는 것",
+"업무를 늘리는 것",
+"일정을 앞당기는 것",
+"보고를 생략하는 것"
+],
+"a": 0,
+"why": "늦게 올리는 것이 가장 큰 문제입니다. 기준을 미리 정해두는 게 좋아요."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>업데이트</b> 요청을 받았을 때 적절한 답변은?",
+"options": [
+"현재 상태, 다음 계획, 걸림돌을 함께 전달",
+"완료라고만 답변",
+"바쁘다고 답변",
+"자료만 첨부"
+],
+"a": 0,
+"why": "상대가 다시 묻지 않아도 되게 만드는 게 좋은 보고입니다."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>정성적</b>과 <b>정량적</b> 지표의 차이는?",
+"options": [
+"정량적은 숫자로 측정 가능, 정성적은 서술적 평가",
+"반대",
+"같은 것",
+"정성적이 숫자"
+],
+"a": 0,
+"why": "만족도 점수는 정량, 인터뷰 의견은 정성입니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>린</b>(Lean)의 핵심 개념은?",
+"options": [
+"낭비를 제거해 가치 흐름을 개선하는 것",
+"빠르게 만드는 것",
+"비용을 줄이는 것만",
+"인원을 줄이는 것"
+],
+"a": 0,
+"why": "도요타 생산방식에서 유래했습니다. 낭비의 정의가 핵심이에요."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>칸반</b>(Kanban)이란?",
+"options": [
+"작업을 시각화하고 동시 진행 수를 제한해 흐름을 관리하는 방식",
+"일정 관리표",
+"보고 양식",
+"회의 방법"
+],
+"a": 0,
+"why": "진행 중 작업을 제한하는 WIP 제한이 핵심입니다. 다 벌여놓으면 아무것도 끝나지 않아요."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>WIP</b>란?",
+"options": [
+"진행 중인 작업",
+"작업 계획",
+"주간 개선 계획",
+"작업 우선순위"
+],
+"a": 0,
+"why": "Work In Progress입니다. 많을수록 완료가 느려집니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>파레토 법칙</b>이 업무에 주는 시사점은?",
+"options": [
+"소수의 핵심 활동이 성과의 대부분을 만든다",
+"모든 일이 똑같이 중요하다",
+"많이 할수록 좋다",
+"시간을 균등 배분하라"
+],
+"a": 0,
+"why": "80대 20 법칙입니다. 무엇이 20%인지 찾는 게 관건이에요."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>아이젠하워 매트릭스</b>의 분류 기준은?",
+"options": [
+"긴급성과 중요성",
+"비용과 시간",
+"난이도와 가치",
+"위험과 보상"
+],
+"a": 0,
+"why": "긴급하지 않지만 중요한 일을 챙기는 게 핵심입니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>데드라인</b>과 <b>듀데이트</b>의 차이는?",
+"options": [
+"실무에서는 거의 같게 쓰이며 둘 다 기한을 뜻함",
+"완전히 다름",
+"듀데이트가 더 늦음",
+"데드라인은 시작일"
+],
+"a": 0,
+"why": "엄밀히는 데드라인이 절대 넘길 수 없는 선이라는 뉘앙스가 더 강합니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>백업 담당자</b>를 두는 이유는?",
+"options": [
+"담당자 부재 시에도 업무가 멈추지 않게 하기 위해",
+"일을 나누기 위해",
+"경쟁시키기 위해",
+"평가를 위해"
+],
+"a": 0,
+"why": "한 사람만 아는 업무는 조직의 위험 요소입니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>인수인계</b>에서 가장 중요한 것은?",
+"options": [
+"문서화되지 않은 암묵적 지식과 맥락을 전달하는 것",
+"자료 목록만 전달",
+"일정 공유",
+"연락처 전달"
+],
+"a": 0,
+"why": "파일은 찾을 수 있지만 왜 그렇게 했는지는 사람만 압니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>요건 정의</b> 단계에서 하는 일은?",
+"options": [
+"무엇을 만들지 명확히 정의하고 합의하는 것",
+"코드를 작성",
+"테스트 수행",
+"서버 구축"
+],
+"a": 0,
+"why": "여기서 흐릿하면 뒤 공정 전체가 흔들립니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>UAT</b>란?",
+"options": [
+"실제 사용자가 업무 관점에서 수행하는 인수 테스트",
+"단위 테스트",
+"성능 테스트",
+"보안 테스트"
+],
+"a": 0,
+"why": "User Acceptance Test입니다. 개발자 테스트와 관점이 다릅니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>핫픽스</b>란?",
+"options": [
+"운영 중 발견된 심각한 문제를 긴급히 수정해 배포하는 것",
+"정기 업데이트",
+"성능 개선",
+"기능 추가"
+],
+"a": 0,
+"why": "정규 배포 주기를 기다릴 수 없을 때 시행합니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>프리징</b>(Code Freeze)이란?",
+"options": [
+"배포 전 안정화를 위해 코드 변경을 중단하는 기간",
+"개발 중단",
+"서버 정지",
+"일정 연기"
+],
+"a": 0,
+"why": "막판 변경이 사고를 부르기 때문입니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>기술 부채</b>란?",
+"options": [
+"빠른 구현을 위해 미룬 개선 과제가 쌓여 나중에 비용으로 돌아오는 것",
+"IT 장비 대금",
+"라이선스 비용",
+"외주 미지급금"
+],
+"a": 0,
+"why": "이자처럼 시간이 갈수록 개발 속도를 갉아먹습니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>레거시 시스템</b>이란?",
+"options": [
+"오래되어 유지보수가 어렵지만 여전히 운영 중인 시스템",
+"최신 시스템",
+"폐기된 시스템",
+"외부 시스템"
+],
+"a": 0,
+"why": "중요 업무를 담당하고 있어 함부로 바꾸기 어렵다는 게 문제입니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>다운타임</b>이란?",
+"options": [
+"서비스가 중단된 시간",
+"점검 준비 시간",
+"야간 시간",
+"대기 시간"
+],
+"a": 0,
+"why": "계획된 다운타임은 사전 공지하고, 계획되지 않은 것은 장애입니다."
+},
+{
+"tag": "IT 업무",
+"type": "choice",
+"q": "<b>포스트모템</b>(사후 분석)의 원칙은?",
+"options": [
+"개인을 탓하지 않고 시스템과 프로세스를 개선하는 데 집중",
+"책임자를 명확히 지목",
+"빠르게 종결",
+"기록을 남기지 않음"
+],
+"a": 0,
+"why": "비난이 두려우면 사실을 숨기게 되고 같은 사고가 반복됩니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>컨센서스</b>란?",
+"options": [
+"구성원들의 의견이 모아진 합의 상태",
+"다수결 결과",
+"상부 지시",
+"만장일치만"
+],
+"a": 0,
+"why": "전원이 최선이라고 여기지 않아도 함께 가기로 동의한 상태를 포함합니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>디스어그리 앤 커밋</b>(Disagree and Commit)이란?",
+"options": [
+"결정에 동의하지 않아도 일단 정해지면 전력으로 실행하는 것",
+"반대하면 참여하지 않는 것",
+"계속 논쟁하는 것",
+"결정을 미루는 것"
+],
+"a": 0,
+"why": "논의는 충분히 하되 결정 후에는 흔들지 않는다는 원칙입니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>얼라인</b>(Align)이란?",
+"options": [
+"관련자들의 이해와 방향을 일치시키는 것",
+"줄을 서는 것",
+"일정을 맞추는 것만",
+"조직을 개편하는 것"
+],
+"a": 0,
+"why": "실행 전에 얼라인이 안 되면 나중에 반드시 되돌아옵니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>싱크가 맞다</b>는 표현의 의미는?",
+"options": [
+"서로 인식과 이해가 일치한다",
+"일정이 같다",
+"속도가 같다",
+"의견이 다르다"
+],
+"a": 0,
+"why": "영어의 on the same page와 같은 뜻으로 쓰입니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>드라이브한다</b>는 표현의 의미는?",
+"options": [
+"주도적으로 이끌어 진행시킨다",
+"빠르게 처리한다",
+"외부에 맡긴다",
+"반복한다"
+],
+"a": 0,
+"why": "누가 드라이브할지 정하지 않으면 일이 굴러가지 않습니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>팔로업</b>(Follow-up)이란?",
+"options": [
+"논의된 사항의 진행 상황을 챙기고 이어가는 것",
+"뒤따라가는 것",
+"반복 보고",
+"재검토"
+],
+"a": 0,
+"why": "회의에서 정한 것이 실행되는지 확인하는 활동입니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "choice",
+"q": "<b>버블업</b>(Bubble up)이란?",
+"options": [
+"현장의 의견이나 이슈를 위로 끌어올리는 것",
+"거품이 생기는 것",
+"성과를 부풀리는 것",
+"업무를 늘리는 것"
+],
+"a": 0,
+"why": "아래에서 위로 올라온다는 이미지에서 온 표현입니다."
+},
+{
+"tag": "커뮤니케이션",
+"type": "ox",
+"q": "회의에서 결정된 사항은 담당자와 기한까지 함께 기록해야 실행으로 이어진다.",
+"a": true,
+"why": "누가 언제까지가 빠지면 아무도 하지 않습니다. 회의록의 최소 요건이에요."
+},
+{
+"tag": "커뮤니케이션",
+"type": "ox",
+"q": "메일 참조(CC)에 많은 사람을 넣을수록 커뮤니케이션이 원활해진다.",
+"a": false,
+"why": "관련 없는 사람이 많으면 오히려 아무도 자기 일로 여기지 않습니다. 수신자는 조치할 사람, 참조는 알아야 할 사람으로 구분하세요."
+},
+{
+"tag": "커뮤니케이션",
+"type": "ox",
+"q": "업무 요청 시 기한을 명시하지 않으면 상대가 알아서 우선순위를 판단해준다.",
+"a": false,
+"why": "기한이 없으면 후순위로 밀립니다. 언제까지 필요한지와 그 이유를 함께 적는 게 좋습니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>To-Be</b>와 <b>As-Is</b>의 차이는?",
+"options": [
+"As-Is는 현재 상태, To-Be는 지향하는 목표 상태",
+"반대",
+"같은 것",
+"To-Be가 현재"
+],
+"a": 0,
+"why": "둘의 격차를 분석하는 것이 갭 분석입니다."
+},
+{
+"tag": "업무 방식",
+"type": "choice",
+"q": "<b>병목</b>(Bottleneck)을 개선할 때 원칙은?",
+"options": [
+"전체 흐름을 가장 제약하는 지점부터 해결",
+"가장 쉬운 곳부터",
+"모든 곳을 동시에",
+"마지막 단계부터"
+],
+"a": 0,
+"why": "병목이 아닌 곳을 개선해도 전체 처리량은 늘지 않습니다."
+},
+{
+"tag": "보고",
+"type": "choice",
+"q": "<b>중간보고</b>가 중요한 이유는?",
+"options": [
+"방향이 틀렸을 때 일찍 바로잡을 수 있기 때문",
+"성실함을 보이기 위해",
+"분량을 채우기 위해",
+"책임을 나누기 위해"
+],
+"a": 0,
+"why": "다 끝내고 나서 방향이 틀렸다는 걸 알면 되돌릴 수 없습니다."
+},
+{
+"tag": "조직",
+"type": "choice",
+"q": "<b>크로스펑셔널 팀</b>이란?",
+"options": [
+"기획·개발·디자인 등 서로 다른 직무가 한 팀으로 묶인 조직",
+"교차 근무 조직",
+"임시 태스크포스만",
+"외주 인력 팀"
+],
+"a": 0,
+"why": "부서 간 핸드오프를 줄여 속도를 높이려는 구조입니다."
+}
+];
+const KEY = 'quiz.work';
+const SIZE = 20;
+
+/* 저장소 — 로컬스토리지가 막힌 환경에서는 메모리로 자동 대체 */
+const mem = {};
+const store = {
+  ok: (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; } })(),
+  read() {
+    try {
+      const raw = this.ok ? localStorage.getItem(KEY) : mem[KEY];
+      const d = raw ? JSON.parse(raw) : null;
+      if (d && Array.isArray(d.seen) && typeof d.cycle === 'number') return d;
+    } catch (e) {}
+    return { seen: [], cycle: 1 };
+  },
+  write(d) {
+    try {
+      const raw = JSON.stringify(d);
+      if (this.ok) localStorage.setItem(KEY, raw); else mem[KEY] = raw;
+    } catch (e) {}
+  },
+  clear() {
+    try { if (this.ok) localStorage.removeItem(KEY); else delete mem[KEY]; } catch (e) {}
+  }
+};
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), foot = $('foot'), nextBtn = $('next'), hint = $('hint');
+const toTop = () => { try { window.scrollTo(0, 0); } catch (e) {} };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let deck = [], idx = 0, score = 0, streak = 0, best = 0, misses = [], locked = false, cur = null;
+let state = store.read(), lastOfCycle = false, startedCycle = 1;
+
+/* 이번 세션에 낼 문제 뽑기 — 한 바퀴 안에서는 중복 없이 */
+function draw() {
+  state = store.read();
+  let seen = state.seen.filter(i => i >= 0 && i < BANK.length);
+  let remain = BANK.map((_, i) => i).filter(i => seen.indexOf(i) === -1);
+
+  if (remain.length === 0) {
+    state = { seen: [], cycle: state.cycle + 1 };
+    store.write(state);
+    seen = [];
+    remain = BANK.map((_, i) => i);
+  }
+  startedCycle = state.cycle;
+  const picked = shuffle(remain).slice(0, SIZE);
+  lastOfCycle = remain.length <= SIZE;
+  return picked;
+}
+
+function build(indices) {
+  deck = indices.map(i => {
+    const q = BANK[i];
+    if (q.type === 'ox') return { ...q, _i: i };
+    const order = shuffle(q.options.map((t, n) => [t, n]));
+    return { ...q, _i: i, options: order.map(o => o[0]), a: order.findIndex(o => o[1] === q.a) };
+  });
+  idx = 0; score = 0; streak = 0; best = 0; misses = [];
+  foot.style.display = '';
+  $('stations').innerHTML = deck.map(() => '<div class="st"><i></i><b></b></div>').join('');
+  render();
+}
+
+function paint() {
+  const sts = $('stations').children;
+  for (let i = 0; i < sts.length; i++) sts[i].classList.toggle('now', i === idx && !locked);
+  const now = sts[idx];
+  if (now && now.scrollIntoView) { try { now.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (e) {} }
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function render() {
+  locked = false;
+  cur = deck[idx];
+  const ox = cur.type === 'ox';
+  const labels = ox ? ['O', 'X'] : cur.options;
+
+  stage.innerHTML =
+    '<div class="tag">' + (cur.tag || '업무용어') + '</div>' +
+    '<h2 class="q">' + cur.q + '</h2>' +
+    '<div class="choices ' + (ox ? 'ox' : '') + '" id="ch"></div>' +
+    '<div id="vd"></div>';
+
+  const ch = $('ch');
+  labels.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button';
+    b.innerHTML = ox ? t : '<kbd>' + (i + 1) + '</kbd><span>' + t + '</span>';
+    b.onclick = () => answer(i);
+    ch.appendChild(b);
+  });
+
+  nextBtn.disabled = true;
+  nextBtn.textContent = '답을 고르세요';
+  hint.textContent = ox ? 'O / X 키로 선택, Enter로 다음' : '1~' + labels.length + ' 숫자키로 선택, Enter로 다음';
+  paint();
+  toTop();
+}
+
+function answer(pick) {
+  if (locked) return;
+  locked = true;
+
+  const correct = cur.type === 'ox' ? (cur.a === true ? 0 : 1) : cur.a;
+  const hit = pick === correct;
+  const opts = $('ch').children;
+
+  for (let i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === correct) opts[i].classList.add('right');
+    else if (i === pick) opts[i].classList.add('wrong');
+    else opts[i].classList.add('dim');
+  }
+
+  const st = $('stations').children[idx];
+  st.classList.remove('now');
+  st.classList.add(hit ? 'pass' : 'fail');
+
+  if (hit) { score++; streak++; best = Math.max(best, streak); }
+  else {
+    streak = 0;
+    misses.push({ q: cur.q, right: cur.type === 'ox' ? (cur.a ? 'O' : 'X') : cur.options[correct], why: cur.why, i: cur._i });
+  }
+
+  /* 푼 즉시 기록 — 중간에 창을 닫아도 진행이 남도록 */
+  if (cur._i !== undefined) {
+    const s = store.read();
+    if (s.cycle === startedCycle && s.seen.indexOf(cur._i) === -1) {
+      s.seen.push(cur._i);
+      store.write(s);
+    }
+  }
+
+  $('vd').innerHTML =
+    '<div class="verdict ' + (hit ? 'ok' : 'no') + '">' +
+    '<h3>' + (hit ? '맞았어요' : '아쉬워요') + '</h3><p>' + cur.why + '</p></div>';
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = idx === deck.length - 1 ? '결과 보기' : '다음 문제';
+  $('cnt').textContent = score + '/' + deck.length;
+  $('streak').textContent = '연속 ' + streak;
+}
+
+function advance() {
+  if (nextBtn.disabled) return;
+  if (idx === deck.length - 1) return finish();
+  idx++;
+  render();
+}
+
+function finish() {
+  foot.style.display = 'none';
+  const pct = Math.round(score / deck.length * 100);
+  const s = store.read();
+  const done = s.cycle === startedCycle ? s.seen.length : BANK.length;
+  const pctAll = Math.round(done / BANK.length * 100);
+
+  stage.innerHTML =
+    '<div class="end">' +
+    '<div class="score"><b>' + pct + '</b><span>점 · ' + score + '/' + deck.length + ' · 최고 연속 ' + best + '</span></div>' +
+    '<p>' + (pct === 100 ? '이번 구간은 만점이에요.' : pct >= 80 ? '거의 다 맞혔어요.' : pct >= 50 ? '절반은 잡았어요.' : '오답 노트부터 읽어보세요.') + '</p>' +
+
+    '<div class="cycle">' +
+    '<div class="cycle-top"><b>' + startedCycle + '바퀴째</b><span>' + done + ' / ' + BANK.length + '문항 · ' + pctAll + '%</span></div>' +
+    '<div class="bar"><i style="width:' + pctAll + '%"></i></div>' +
+    '<small>' + (lastOfCycle ? '이번 바퀴를 다 돌았어요. 다음 회차부터 ' + (startedCycle + 1) + '바퀴가 시작됩니다.' :
+      '다음 회차에는 아직 안 나온 ' + (BANK.length - done) + '문항 중에서 출제돼요.') +
+    (store.ok ? '' : ' (이 환경에서는 저장이 안 되니 파일을 내려받아 열면 진행이 유지됩니다)') + '</small></div>' +
+
+    (misses.length ? '<h2>오답 노트 ' + misses.length + '</h2>' +
+      misses.map(m => '<div class="miss"><h4>' + m.q + '</h4><p><b>' + m.right + '</b> — ' + m.why + '</p></div>').join('') : '') +
+
+    '<div class="actions">' +
+    (misses.length ? '<button class="next" id="again">틀린 ' + misses.length + '문제만 다시</button>' : '') +
+    '<button class="ghost" id="more">다음 ' + Math.min(SIZE, Math.max(BANK.length - done, SIZE)) + '문항 이어서</button>' +
+    '<a class="ghost linkbtn" href="index.html">다른 노선 고르기</a>' +
+    '<button class="ghost quiet" id="reset">진행 기록 초기화</button>' +
+    '</div></div>';
+
+  if ($('again')) $('again').onclick = () => build(misses.map(m => m.i));
+  $('more').onclick = () => build(draw());
+  $('reset').onclick = openAdmin;
+  toTop();
+}
+
+nextBtn.onclick = advance;
+
+/* 관리자 초기화 — 비밀번호는 오조작 방지용이지 보안 장치가 아님 */
+const PIN = '1111';
+const mask = $('mask'), pin = $('pin'), warn = $('warn');
+let modalOpen = false;
+
+function openAdmin() {
+  modalOpen = true;
+  mask.hidden = false;
+  pin.value = '';
+  warn.textContent = '';
+  pin.classList.remove('shake');
+  setTimeout(() => pin.focus(), 30);
+}
+
+function closeAdmin() {
+  modalOpen = false;
+  mask.hidden = true;
+}
+
+function tryReset() {
+  if (pin.value !== PIN) {
+    warn.textContent = '비밀번호가 맞지 않습니다.';
+    pin.classList.remove('shake');
+    void pin.offsetWidth;
+    pin.classList.add('shake');
+    pin.value = '';
+    pin.focus();
+    return;
+  }
+  store.clear();
+  state = { seen: [], cycle: 1 };
+  closeAdmin();
+  build(draw());
+}
+
+$('admin').onclick = openAdmin;
+$('cancel').onclick = closeAdmin;
+$('confirm').onclick = tryReset;
+mask.onclick = e => { if (e.target === mask) closeAdmin(); };
+pin.onkeydown = e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); tryReset(); }
+  if (e.key === 'Escape') closeAdmin();
+};
+
+document.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeAdmin(); return; }
+  if (e.key === 'Enter' || e.key === ' ') { if (!nextBtn.disabled && foot.style.display !== 'none') { e.preventDefault(); advance(); } return; }
+  if (locked || !$('ch')) return;
+  const ch = $('ch').children;
+  if (cur.type === 'ox') {
+    if (e.key === 'o' || e.key === 'O' || e.key === 'ㅐ') answer(0);
+    if (e.key === 'x' || e.key === 'X' || e.key === 'ㅌ') answer(1);
+  } else {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= ch.length) answer(n - 1);
+  }
+});
+
+build(draw());
+</script>
+</body>
+</html>
